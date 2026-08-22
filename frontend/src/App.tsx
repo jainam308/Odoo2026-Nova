@@ -7,6 +7,12 @@ import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SearchPage from './pages/discovery/SearchPage';
+import { CreateTrip } from './pages/trips/CreateTrip';
+import { TripList } from './pages/trips/TripList';
+import { ItineraryView } from './pages/trips/ItineraryView';
+import { ItineraryBuilder } from './pages/trips/ItineraryBuilder';
+import { PublicTripView } from './pages/trips/PublicTripView';
+import { ExploreDestinations } from './pages/trips/ExploreDestinations';
 import './App.css';
 
 const NavigationWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,6 +52,12 @@ function App() {
             <Route path="/discover" element={<SearchPage />} />
             <Route path="/cities" element={<SearchPage />} />
             <Route path="/activities" element={<SearchPage />} />
+            <Route path="/explore" element={<ExploreDestinations />} />
+            <Route path="/trips" element={<TripList />} />
+            <Route path="/trips/new" element={<CreateTrip />} />
+            <Route path="/trips/:id" element={<ItineraryView />} />
+            <Route path="/trips/:id/builder" element={<ItineraryBuilder />} />
+            <Route path="/trips/share/:slug" element={<PublicTripView />} />
             <Route
               path="/profile"
               element={
@@ -56,7 +68,6 @@ function App() {
             />
 
             {/* Fallbacks for navigation links */}
-            <Route path="/trips" element={<Navigate to="/profile" replace />} />
             <Route path="/calendar" element={<Navigate to="/profile" replace />} />
             <Route path="/community" element={<Navigate to="/" replace />} />
 

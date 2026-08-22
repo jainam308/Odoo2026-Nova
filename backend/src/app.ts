@@ -3,13 +3,15 @@ import cors from 'cors';
 import db from './db';
 import routes from './routes';
 import errorHandler from './middleware/errorHandler';
-
+import tripsRouter from './routes/trips.routes';
 const app: Express = express();
 
 app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
+app.use('/api/trips', tripsRouter);
+
 interface HealthResponse {
   success: boolean;
   status: 'healthy' | 'unhealthy';
