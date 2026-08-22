@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { fetchTrips, deleteTrip } from '../../api/trips.api';
 import { Trip } from '../../types/trip';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 export const TripList: React.FC = () => {
   const navigate = useNavigate();
@@ -240,10 +241,7 @@ export const TripList: React.FC = () => {
                   {/* Cover Image Container */}
                   <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
                     <img
-                      src={
-                        trip.cover_photo_url ||
-                        'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'
-                      }
+                      src={safeImageUrl(trip.cover_photo_url, 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80')}
                       alt={trip.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

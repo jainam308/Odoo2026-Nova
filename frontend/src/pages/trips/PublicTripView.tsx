@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { fetchTrips, createTrip } from '../../api/trips.api';
 import { Trip } from '../../types/trip';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 export const PublicTripView: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -92,7 +93,7 @@ export const PublicTripView: React.FC = () => {
       {/* Public Cover Hero */}
       <div className="relative h-96 w-full bg-gray-900 overflow-hidden">
         <img
-          src={trip.cover_photo_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&q=80'}
+          src={safeImageUrl(trip.cover_photo_url, 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&q=80')}
           alt={trip.name}
           className="w-full h-full object-cover opacity-60"
         />
