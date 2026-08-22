@@ -215,11 +215,15 @@ export async function getActivitiesReadOnly(req: Request, res: Response): Promis
  */
 export async function createStop(req: Request, res: Response): Promise<void> {
   try {
-    const tripId = Number(req.params.tripId);
-    const cityId = req.body.city_id ?? req.body.cityId;
+    const tripId = Number(req.params.tripId || req.params.id);
+    let cityId = req.body.city_id ?? req.body.cityId;
+    const cityName = req.body.city_name ?? req.body.cityName;
+    const country = req.body.country || 'Global';
+    const imageUrl = req.body.image_url || req.body.imageUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
     const startDate = req.body.start_date ?? req.body.startDate;
     const endDate = req.body.end_date ?? req.body.endDate;
     let orderIndex = req.body.order_index ?? req.body.orderIndex;
+    const budget = Number(req.body.budget) || 0;
 
     if (!Number.isInteger(tripId)) {
       res.status(400).json({ success: false, error: 'Invalid trip id' });
@@ -232,8 +236,26 @@ export async function createStop(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (cityId == null && typeof cityName === 'string' && cityName.trim()) {
+      const existing = await db.query<{ id: number }>(
+        'SELECT id FROM cities WHERE LOWER(name) = LOWER($1) LIMIT 1',
+        [cityName.trim()]
+      );
+      if (existing.rows.length > 0) {
+        cityId = existing.rows[0].id;
+      } else {
+        const insCity = await db.query<{ id: number }>(
+          `INSERT INTO cities (name, country, image_url, popularity, cost_index)
+           VALUES ($1, $2, $3, 85, 3)
+           RETURNING id`,
+          [cityName.trim(), country, imageUrl]
+        );
+        cityId = insCity.rows[0].id;
+      }
+    }
+
     if (cityId == null) {
-      res.status(400).json({ success: false, error: 'cityId is required' });
+      res.status(400).json({ success: false, error: 'cityId or city_name is required' });
       return;
     }
 
@@ -247,9 +269,9 @@ export async function createStop(req: Request, res: Response): Promise<void> {
 
     const insertRes = await db.query<{ id: number }>(
       `INSERT INTO trip_stops (trip_id, city_id, start_date, end_date, order_index, budget)
-       VALUES ($1, $2, $3, $4, $5, 0)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [tripId, cityId, startDate ?? null, endDate ?? null, orderIndex]
+      [tripId, cityId, startDate ?? null, endDate ?? null, orderIndex, budget]
     );
 
     const stopId = insertRes.rows[0].id;
@@ -262,7 +284,24 @@ export async function createStop(req: Request, res: Response): Promise<void> {
       [stopId]
     );
 
-    res.status(201).json({ success: true, data: mapStop(result.rows[0]) });
+    const mapped = mapStop(result.rows[0]);
+    res.status(201).json({
+      success: true,
+      data: mapped,
+      stop: {
+        id: mapped.id,
+        trip_id: mapped.tripId,
+        city_id: mapped.cityId,
+        start_date: mapped.startDate,
+        end_date: mapped.endDate,
+        order_index: mapped.orderIndex,
+        budget: mapped.budget,
+        city_name: mapped.city?.name || cityName || 'City Stop',
+        country: mapped.city?.country || country || 'Global',
+        image_url: mapped.city?.imageUrl || imageUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
+        activities: [],
+      },
+    });
   } catch (err) {
     res.status(500).json({
       success: false,

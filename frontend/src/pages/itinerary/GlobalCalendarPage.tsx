@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  DollarSign,
   Plus,
   Sparkles,
 } from 'lucide-react';
@@ -38,7 +37,7 @@ interface DayActivityItem {
 export const GlobalCalendarPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const [_trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 0, 15)); // Default Jan 15, 2026
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2026, 0, 1)); // January 2026
@@ -50,7 +49,7 @@ export const GlobalCalendarPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
 
   const [selectedDayItems, setSelectedDayItems] = useState<DayActivityItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [_loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let ignore = false;

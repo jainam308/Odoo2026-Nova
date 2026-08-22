@@ -504,6 +504,119 @@ export const deleteTrip = async (
 };
 
 /**
+ * GET /api/trips/:id/stops - Retrieve all stops for a trip
+ */
+export const getTripStops = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const tripId = Number(req.params.id || req.params.tripId);
+    if (isNaN(tripId) || tripId <= 0) {
+      res.status(400).json({ success: false, message: 'Invalid trip ID' });
+      return;
+    }
+
+    const stopsResult = await db.query(
+      `SELECT ts.id, ts.trip_id, ts.city_id,
+              TO_CHAR(ts.start_date, 'YYYY-MM-DD') as start_date,
+              TO_CHAR(ts.end_date, 'YYYY-MM-DD') as end_date,
+              ts.budget::numeric as budget, ts.order_index,
+              COALESCE(c.name, 'City Stop') as city_name,
+              COALESCE(c.country, 'Global') as country,
+              COALESCE(c.image_url, 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80') as image_url
+       FROM trip_stops ts
+       LEFT JOIN cities c ON ts.city_id = c.id
+       WHERE ts.trip_id = $1
+       ORDER BY ts.order_index ASC, ts.start_date ASC`,
+      [tripId]
+    );
+
+    const stops = stopsResult.rows;
+    const stopIds = stops.map((s) => s.id);
+
+    let activitiesMap: Record<number, any[]> = {};
+    if (stopIds.length > 0) {
+      const actResult = await db.query(
+        `SELECT sa.id, sa.trip_stop_id, sa.activity_id,
+                sa.custom_name as name,
+                sa.custom_cost::numeric as cost,
+                TO_CHAR(sa.scheduled_date, 'YYYY-MM-DD') as scheduled_date,
+                sa.notes, sa.order_index,
+                COALESCE(a.category, 'Sightseeing') as category,
+                COALESCE(a.duration_minutes / 60.0, 2) as duration_hours,
+                COALESCE(a.duration_minutes, 120) as duration_minutes,
+                COALESCE(a.image_url, 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80') as image_url,
+                COALESCE(a.description, sa.notes) as description
+         FROM stop_activities sa
+         LEFT JOIN activities a ON sa.activity_id = a.id
+         WHERE sa.trip_stop_id = ANY($1::int[])
+         ORDER BY sa.order_index ASC, sa.id ASC`,
+        [stopIds]
+      );
+      for (const act of actResult.rows) {
+        if (!activitiesMap[act.trip_stop_id]) activitiesMap[act.trip_stop_id] = [];
+        activitiesMap[act.trip_stop_id].push({
+          ...act,
+          cost: Number(act.cost) || 0,
+        });
+      }
+    }
+
+    const mappedDTOs = stops.map((s) => ({
+      id: s.id,
+      tripId: s.trip_id,
+      cityId: s.city_id,
+      startDate: s.start_date,
+      endDate: s.end_date,
+      orderIndex: s.order_index,
+      budget: Number(s.budget) || 0,
+      city: {
+        id: s.city_id,
+        name: s.city_name,
+        country: s.country,
+        imageUrl: s.image_url,
+      },
+      activities: (activitiesMap[s.id] || []).map((a) => ({
+        id: a.id,
+        stopId: a.trip_stop_id,
+        activityId: a.activity_id,
+        customName: a.name,
+        customCost: a.cost,
+        scheduledDate: a.scheduled_date,
+        orderIndex: a.order_index,
+        notes: a.notes,
+        activity: a.activity_id
+          ? {
+              name: a.name,
+              category: a.category,
+              description: a.description,
+              cost: a.cost,
+              durationMinutes: a.duration_minutes,
+              imageUrl: a.image_url,
+            }
+          : null,
+      })),
+    }));
+
+    const enrichedStops = stops.map((s) => ({
+      ...s,
+      budget: Number(s.budget) || 0,
+      activities: activitiesMap[s.id] || [],
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: mappedDTOs,
+      stops: enrichedStops,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/trips/:id/stops - Add a destination stop to a trip in PostgreSQL
  */
 export const addTripStop = async (
@@ -512,35 +625,65 @@ export const addTripStop = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const tripId = Number(req.params.id);
-    const { city_name, country, start_date, end_date, budget, image_url } = req.body;
+    const tripId = Number(req.params.id || req.params.tripId);
+    let {
+      city_name,
+      country,
+      start_date,
+      end_date,
+      budget,
+      image_url,
+      cityId,
+      city_id,
+      startDate,
+      endDate,
+      orderIndex,
+      order_index,
+    } = req.body;
 
-    if (!city_name || typeof city_name !== 'string' || city_name.trim().length < 2) {
-      res.status(400).json({ success: false, message: 'City name is required' });
-      return;
+    let targetCityId: number | null = city_id ?? cityId ?? null;
+    let finalCityName: string = typeof city_name === 'string' ? city_name.trim() : '';
+    let finalCountry: string = typeof country === 'string' && country.trim() ? country.trim() : 'Global';
+    let finalImageUrl: string = typeof image_url === 'string' && image_url.trim() ? image_url.trim() : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
+
+    // If cityId was provided but not city_name, look up the city
+    if (targetCityId && !finalCityName) {
+      const cityLookup = await db.query<{ id: number; name: string; country: string; image_url: string | null }>(
+        'SELECT id, name, country, image_url FROM cities WHERE id = $1',
+        [targetCityId]
+      );
+      if (cityLookup.rows.length > 0) {
+        finalCityName = cityLookup.rows[0].name;
+        finalCountry = cityLookup.rows[0].country || finalCountry;
+        finalImageUrl = cityLookup.rows[0].image_url || finalImageUrl;
+      }
     }
 
-    // Find or create city in cities table
-    let cityId: number | null = null;
-    const existingCity = await db.query<{ id: number }>(
-      'SELECT id FROM cities WHERE LOWER(name) = LOWER($1) LIMIT 1',
-      [city_name.trim()]
-    );
-
-    if (existingCity.rows.length > 0) {
-      cityId = existingCity.rows[0].id;
-    } else {
-      const newCity = await db.query<{ id: number }>(
-        `INSERT INTO cities (name, country, image_url, popularity, cost_index)
-         VALUES ($1, $2, $3, 85, 3)
-         RETURNING id`,
-        [
-          city_name.trim(),
-          country ? country.trim() : 'Global',
-          image_url ? image_url.trim() : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
-        ]
+    // If city_name is provided, find or create city in cities table
+    if (finalCityName) {
+      const existingCity = await db.query<{ id: number; name: string; country: string; image_url: string | null }>(
+        'SELECT id, name, country, image_url FROM cities WHERE LOWER(name) = LOWER($1) LIMIT 1',
+        [finalCityName]
       );
-      cityId = newCity.rows[0].id;
+
+      if (existingCity.rows.length > 0) {
+        targetCityId = existingCity.rows[0].id;
+        finalCountry = existingCity.rows[0].country || finalCountry;
+        finalImageUrl = existingCity.rows[0].image_url || finalImageUrl;
+      } else {
+        const newCity = await db.query<{ id: number }>(
+          `INSERT INTO cities (name, country, image_url, popularity, cost_index)
+           VALUES ($1, $2, $3, 85, 3)
+           RETURNING id`,
+          [finalCityName, finalCountry, finalImageUrl]
+        );
+        targetCityId = newCity.rows[0].id;
+      }
+    }
+
+    if (!targetCityId && !finalCityName) {
+      res.status(400).json({ success: false, message: 'City name or valid cityId is required' });
+      return;
     }
 
     // Count existing stops for order_index
@@ -548,7 +691,11 @@ export const addTripStop = async (
       'SELECT COUNT(*) as count FROM trip_stops WHERE trip_id = $1',
       [tripId]
     );
-    const nextOrder = parseInt(countRes.rows[0].count, 10) || 0;
+    const calculatedOrder = parseInt(countRes.rows[0]?.count || '0', 10);
+    const finalOrder = order_index ?? orderIndex ?? calculatedOrder;
+    const finalStartDate = start_date || startDate || null;
+    const finalEndDate = end_date || endDate || null;
+    const finalBudget = Number(budget) || 0;
 
     const stopInsert = await db.query(
       `INSERT INTO trip_stops (trip_id, city_id, start_date, end_date, budget, order_index)
@@ -559,25 +706,43 @@ export const addTripStop = async (
                  budget::numeric as budget, order_index`,
       [
         tripId,
-        cityId,
-        start_date || null,
-        end_date || null,
-        Number(budget) || 0,
-        nextOrder,
+        targetCityId,
+        finalStartDate,
+        finalEndDate,
+        finalBudget,
+        finalOrder,
       ]
     );
 
     const insertedStop = stopInsert.rows[0];
 
+    const mappedDTO = {
+      id: insertedStop.id,
+      tripId: insertedStop.trip_id,
+      cityId: insertedStop.city_id,
+      startDate: insertedStop.start_date,
+      endDate: insertedStop.end_date,
+      orderIndex: insertedStop.order_index,
+      budget: Number(insertedStop.budget) || 0,
+      city: {
+        id: targetCityId,
+        name: finalCityName,
+        country: finalCountry,
+        imageUrl: finalImageUrl,
+      },
+      activities: [],
+    };
+
     res.status(201).json({
       success: true,
       stop: {
         ...insertedStop,
-        city_name: city_name.trim(),
-        country: country ? country.trim() : 'Global',
-        image_url: image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
+        city_name: finalCityName,
+        country: finalCountry,
+        image_url: finalImageUrl,
         activities: [],
       },
+      data: mappedDTO,
     });
   } catch (error) {
     next(error);
@@ -606,7 +771,7 @@ export const deleteTripStop = async (
       return;
     }
 
-    res.status(200).json({ success: true, deleted: true });
+    res.status(200).json({ success: true, deleted: true, data: { deleted: true } });
   } catch (error) {
     next(error);
   }
@@ -622,58 +787,133 @@ export const addStopActivity = async (
 ): Promise<void> => {
   try {
     const stopId = Number(req.params.stopId);
-    const { name, category, cost, duration_hours, scheduled_time, notes, image_url } = req.body;
+    let {
+      name,
+      category,
+      cost,
+      duration_hours,
+      scheduled_time,
+      notes,
+      image_url,
+      activityId,
+      activity_id,
+      customName,
+      custom_name,
+      customCost,
+      custom_cost,
+      scheduledDate,
+      scheduled_date,
+      orderIndex,
+      order_index,
+    } = req.body;
 
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      res.status(400).json({ success: false, message: 'Activity name is required' });
-      return;
+    let targetActivityId: number | null = activity_id ?? activityId ?? null;
+    let finalName: string = (name || customName || custom_name || '').trim();
+    let finalCategory: string = category || 'Sightseeing';
+    let finalCost: number = Number(cost ?? customCost ?? custom_cost) || 0;
+    let finalImageUrl: string = image_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80';
+    let durationMinutes = Math.round((Number(duration_hours) || 1) * 60);
+
+    // If activityId was provided, look up details
+    if (targetActivityId) {
+      const actLookup = await db.query<{
+        id: number;
+        name: string;
+        category: string;
+        cost: string;
+        duration_minutes: number;
+        image_url: string | null;
+      }>(
+        'SELECT id, name, category, cost, duration_minutes, image_url FROM activities WHERE id = $1',
+        [targetActivityId]
+      );
+      if (actLookup.rows.length > 0) {
+        const row = actLookup.rows[0];
+        if (!finalName) finalName = row.name;
+        if (!category) finalCategory = row.category;
+        if (cost == null && customCost == null && custom_cost == null) finalCost = Number(row.cost) || 0;
+        if (!image_url && row.image_url) finalImageUrl = row.image_url;
+        if (duration_hours == null && row.duration_minutes) durationMinutes = row.duration_minutes;
+      }
+    } else if (finalName) {
+      // Optional: check if catalog activity exists with same name
+      const existingAct = await db.query<{ id: number; category: string; image_url: string | null }>(
+        'SELECT id, category, image_url FROM activities WHERE LOWER(name) = LOWER($1) LIMIT 1',
+        [finalName]
+      );
+      if (existingAct.rows.length > 0) {
+        targetActivityId = existingAct.rows[0].id;
+        if (!category) finalCategory = existingAct.rows[0].category;
+        if (!image_url && existingAct.rows[0].image_url) finalImageUrl = existingAct.rows[0].image_url;
+      }
     }
 
-    const durationMinutes = Math.round((Number(duration_hours) || 1) * 60);
-
-    // Optional: link or insert into activities catalog
-    let activityId: number | null = null;
-    const existingAct = await db.query<{ id: number }>(
-      'SELECT id FROM activities WHERE LOWER(name) = LOWER($1) LIMIT 1',
-      [name.trim()]
-    );
-
-    if (existingAct.rows.length > 0) {
-      activityId = existingAct.rows[0].id;
+    if (!finalName) {
+      res.status(400).json({ success: false, message: 'Activity name or valid activityId is required' });
+      return;
     }
 
     const countRes = await db.query<{ count: string }>(
       'SELECT COUNT(*) as count FROM stop_activities WHERE trip_stop_id = $1',
       [stopId]
     );
-    const nextOrder = parseInt(countRes.rows[0].count, 10) || 0;
+    const calculatedOrder = parseInt(countRes.rows[0]?.count || '0', 10);
+    const finalOrder = order_index ?? orderIndex ?? calculatedOrder;
+    const finalNotes = notes ? notes.trim() : scheduled_time || '';
+    const finalScheduledDate = scheduled_date || scheduledDate || null;
 
     const insertQuery = `
-      INSERT INTO stop_activities (trip_stop_id, activity_id, custom_name, custom_cost, notes, order_index)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO stop_activities (trip_stop_id, activity_id, custom_name, custom_cost, notes, order_index, scheduled_date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id, trip_stop_id, activity_id, custom_name as name,
-                custom_cost::numeric as cost, notes, order_index
+                custom_cost::numeric as cost, notes, order_index,
+                TO_CHAR(scheduled_date, 'YYYY-MM-DD') as scheduled_date
     `;
 
     const result = await db.query(insertQuery, [
       stopId,
-      activityId,
-      name.trim(),
-      Number(cost) || 0,
-      notes ? notes.trim() : scheduled_time || '',
-      nextOrder,
+      targetActivityId,
+      finalName,
+      finalCost,
+      finalNotes,
+      finalOrder,
+      finalScheduledDate,
     ]);
+
+    const inserted = result.rows[0];
+
+    const mappedActivityDTO = {
+      id: inserted.id,
+      stopId: inserted.trip_stop_id,
+      activityId: inserted.activity_id,
+      customName: inserted.name,
+      customCost: Number(inserted.cost) || 0,
+      scheduledDate: inserted.scheduled_date,
+      orderIndex: inserted.order_index,
+      notes: inserted.notes,
+      activity: targetActivityId
+        ? {
+            name: finalName,
+            category: finalCategory,
+            description: finalNotes,
+            cost: finalCost,
+            durationMinutes: durationMinutes,
+            imageUrl: finalImageUrl,
+          }
+        : null,
+    };
 
     res.status(201).json({
       success: true,
       activity: {
-        ...result.rows[0],
-        cost: Number(result.rows[0].cost) || 0,
-        category: category || 'Sightseeing',
-        duration_hours: Number(duration_hours) || 1,
+        ...inserted,
+        cost: Number(inserted.cost) || 0,
+        category: finalCategory,
+        duration_hours: durationMinutes / 60.0,
         scheduled_time: scheduled_time || 'Flexible',
-        image_url: image_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80',
+        image_url: finalImageUrl,
       },
+      data: mappedActivityDTO,
     });
   } catch (error) {
     next(error);

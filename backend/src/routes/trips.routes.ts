@@ -7,6 +7,7 @@ import {
   updateTrip,
   deleteTrip,
   addTripStop,
+  getTripStops,
   deleteTripStop,
   reorderTripStops,
   addStopActivity,
@@ -30,6 +31,7 @@ router.put('/:id', updateTrip);
 router.delete('/:id', deleteTrip);
 
 // Stops
+router.get('/:id/stops', getTripStops);
 router.post('/:id/stops', addTripStop);
 router.put('/:id/stops/reorder', reorderTripStops);
 router.delete('/:id/stops/:stopId', deleteTripStop);
