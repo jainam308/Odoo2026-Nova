@@ -3,13 +3,16 @@ import cors from 'cors';
 import db from './db';
 import routes from './routes';
 import errorHandler from './middleware/errorHandler';
+import tripsRouter from './routes/trips.routes';
 
 const app: Express = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// Module B: Trip itinerary routes
+app.use('/api/trips', tripsRouter);
+
 interface HealthResponse {
   success: boolean;
   status: 'healthy' | 'unhealthy';
@@ -36,7 +39,7 @@ app.get('/api/health', async (_req: Request, res: Response<HealthResponse>) => {
   }
 });
 
-// Mount Central API Routes
+// Module A: Central API Routes (auth, users, cities, activities)
 app.use('/api', routes);
 
 // Global Error Handler Middleware

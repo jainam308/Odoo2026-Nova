@@ -2,11 +2,22 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components';
+
+// Module A Pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SearchPage from './pages/discovery/SearchPage';
+
+// Module B Pages
+import { CreateTrip } from './pages/trips/CreateTrip';
+import { TripList } from './pages/trips/TripList';
+import { ItineraryView } from './pages/trips/ItineraryView';
+import { ItineraryBuilder } from './pages/trips/ItineraryBuilder';
+import { PublicTripView } from './pages/trips/PublicTripView';
+import { ExploreDestinations } from './pages/trips/ExploreDestinations';
+
 import './App.css';
 
 const NavigationWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -39,7 +50,7 @@ function App() {
       <AuthProvider>
         <NavigationWrapper>
           <Routes>
-            {/* Module A Screens */}
+            {/* Module A — Auth & Discovery */}
             <Route path="/" element={<DashboardPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -55,10 +66,41 @@ function App() {
               }
             />
 
-            {/* Fallbacks for navigation links */}
-            <Route path="/trips" element={<Navigate to="/profile" replace />} />
-            <Route path="/calendar" element={<Navigate to="/profile" replace />} />
-            <Route path="/community" element={<Navigate to="/" replace />} />
+            {/* Module B — Trip Itinerary */}
+            <Route path="/explore" element={<ExploreDestinations />} />
+            <Route
+              path="/trips"
+              element={
+                <ProtectedRoute>
+                  <TripList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/new"
+              element={
+                <ProtectedRoute>
+                  <CreateTrip />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id"
+              element={
+                <ProtectedRoute>
+                  <ItineraryView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/builder"
+              element={
+                <ProtectedRoute>
+                  <ItineraryBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/trips/share/:slug" element={<PublicTripView />} />
 
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
