@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getTripById, fetchTripBudget, removeActivityFromStop } from '../../api/trips.api';
 import { Trip, TripBudgetSummary } from '../../types/trip';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 export const ItineraryView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,7 +111,7 @@ export const ItineraryView: React.FC = () => {
       {/* Hero Cover Banner */}
       <div className="relative h-80 w-full bg-gray-900 overflow-hidden">
         <img
-          src={trip.cover_photo_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&q=80'}
+          src={safeImageUrl(trip.cover_photo_url, 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&q=80')}
           alt={trip.name}
           className="w-full h-full object-cover opacity-60"
         />

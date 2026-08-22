@@ -18,6 +18,15 @@ export interface UserRecord {
   created_at: Date;
 }
 
+function isUiAvatarHost(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    return new URL(value).hostname === 'ui-avatars.com';
+  } catch {
+    return false;
+  }
+}
+
 export const signup = async (
   req: Request,
   res: Response,
@@ -174,7 +183,7 @@ export const googleLogin = async (
     if (existing.rows.length > 0) {
       const existingUser = existing.rows[0];
       // Update avatar if provided
-      if (photo_url && (!existingUser.photo_url || existingUser.photo_url.includes('ui-avatars.com'))) {
+      if (photo_url && (!existingUser.photo_url || isUiAvatarHost(existingUser.photo_url))) {
         await db.query('UPDATE users SET photo_url = $1 WHERE id = $2', [photo_url, existingUser.id]);
         existingUser.photo_url = photo_url;
       }

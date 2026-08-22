@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import db from './db';
 import routes from './routes';
+import stopsRouter from './routes/stops.routes';
 import errorHandler from './middleware/errorHandler';
 
 const app: Express = express();
@@ -38,6 +39,9 @@ app.get('/api/health', async (_req: Request, res: Response<HealthResponse>) => {
 
 // Mount Central API Routes (Module A + Module B)
 app.use('/api', routes);
+
+// Mount Module C Itinerary & Stops Routes
+app.use('/api', stopsRouter);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

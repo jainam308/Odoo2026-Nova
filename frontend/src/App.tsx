@@ -19,8 +19,11 @@ import { Dashboard } from './pages/trips/Dashboard';
 import { PublicTripView } from './pages/trips/PublicTripView';
 import { ExploreDestinations } from './pages/trips/ExploreDestinations';
 
+// Module C routes
+import ItineraryRoutes from './pages/itinerary/ItineraryRoutes';
+
 // ──────────────────────────────────────────────
-// Shared Navigation Bar (combines both modules)
+// Shared Navigation Bar (combines all modules)
 // ──────────────────────────────────────────────
 function NavigationBar() {
   const location = useLocation();
@@ -48,7 +51,7 @@ function NavigationBar() {
           <Link
             to="/explore"
             className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
-              isCurrent('/explore')
+              isCurrent('/explore') || isCurrent('/discover') || isCurrent('/cities')
                 ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
@@ -123,7 +126,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 // ──────────────────────────────────────────────
-// App
+// Main Application Component
 // ──────────────────────────────────────────────
 function App() {
   return (
@@ -149,7 +152,7 @@ function App() {
                 }
               />
 
-              {/* ── Module B – Trip Itinerary Builder ── */}
+              {/* ── Module B – Trip Management & Itinerary Builder ── */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/trips" element={<TripList />} />
               <Route path="/trips/new" element={<CreateTrip />} />
@@ -157,11 +160,14 @@ function App() {
               <Route path="/trips/:id/builder" element={<ItineraryBuilder />} />
               <Route path="/trips/:id" element={<ItineraryView />} />
               <Route path="/explore" element={<ExploreDestinations />} />
-
-              {/* ── Shared landing used by Module A's DashboardPage ── */}
               <Route path="/dashboard" element={<DashboardPage />} />
 
-              {/* Catch-all */}
+              {/* ── Module C – Stops & Calendar Timeline ── */}
+              <Route path="/itinerary/*" element={<ItineraryRoutes />} />
+
+              {/* Fallback routes */}
+              <Route path="/calendar" element={<Navigate to="/profile" replace />} />
+              <Route path="/community" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
