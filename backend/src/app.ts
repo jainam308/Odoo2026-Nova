@@ -1,11 +1,15 @@
 import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import db from './db';
+import stopsRouter from './routes/stops.routes';
 
 const app: Express = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Module C (Itinerary & Sharing) — single mount line.
+app.use('/api', stopsRouter);
 
 
 // example request later to be removed :)
