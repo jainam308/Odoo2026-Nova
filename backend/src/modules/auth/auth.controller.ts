@@ -15,6 +15,7 @@ export interface UserRecord {
   country: string | null;
   photo_url: string | null;
   bio: string | null;
+  is_admin: boolean;
   created_at: Date;
 }
 
@@ -108,7 +109,7 @@ export const login = async (
     const { email, password } = parseResult.data;
 
     const result = await db.query<UserRecord>(
-      `SELECT id, first_name, last_name, email, password_hash, phone, city, country, bio, photo_url, created_at
+      `SELECT id, first_name, last_name, email, password_hash, phone, city, country, bio, photo_url, COALESCE(is_admin, false) AS is_admin, created_at
        FROM users
        WHERE LOWER(email) = LOWER($1)`,
       [email]
@@ -172,7 +173,7 @@ export const googleLogin = async (
 
     // Check if user already exists
     const existing = await db.query<UserRecord>(
-      `SELECT id, first_name, last_name, email, password_hash, phone, city, country, bio, photo_url, created_at
+      `SELECT id, first_name, last_name, email, password_hash, phone, city, country, bio, photo_url, COALESCE(is_admin, false) AS is_admin, created_at
        FROM users
        WHERE LOWER(email) = LOWER($1)`,
       [email]

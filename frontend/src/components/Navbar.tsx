@@ -10,6 +10,7 @@ export interface NavbarUser {
   last_name?: string | null;
   email?: string;
   photo_url?: string | null;
+  is_admin?: boolean;
 }
 
 export interface NavbarProps {
@@ -29,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
     { label: 'Discover', path: '/discover', icon: <MapPin size={16} /> },
     { label: 'My Trips', path: '/trips', icon: <Globe size={16} /> },
     { label: 'Itinerary Builder', path: '/itinerary', icon: <Calendar size={16} /> },
-    { label: 'Admin Panel', path: '/admin', icon: <Users size={16} /> },
+    ...(user?.is_admin ? [{ label: 'Admin Panel', path: '/admin', icon: <Users size={16} /> }] : []),
   ];
 
   const getInitials = () => {

@@ -13,7 +13,7 @@ export const getMe = async (
     const userId = req.user?.id;
 
     const result = await db.query<Omit<UserRecord, 'password_hash'>>(
-      `SELECT id, first_name, last_name, email, phone, city, country, bio, photo_url, created_at
+      `SELECT id, first_name, last_name, email, phone, city, country, bio, photo_url, COALESCE(is_admin, false) AS is_admin, created_at
        FROM users
        WHERE id = $1`,
       [userId]

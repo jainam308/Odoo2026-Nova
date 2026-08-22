@@ -1,404 +1,413 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Calendar,
-  Image as ImageIcon,
-  FileText,
   ArrowLeft,
-  Globe,
-  Lock,
-  AlertCircle
+  Sparkles,
+  Check,
+  Compass,
+  AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { createTrip } from '../../api/trips.api';
+import { createStop, getCities, City } from '../../api/itinerary.api';
+import Card from '../../components/Card';
+import Button from '../../components/Button';
 
-interface TripFormData {
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  cover_photo_url: string;
-  is_public: boolean;
+interface SuggestionCard {
+  id: number;
+  cityId: number;
+  cityName: string;
+  country: string;
+  title: string;
+  activities: string[];
+  imageUrl: string;
+  category: string;
+  costLabel: string;
 }
 
-interface FormErrors {
-  name?: string;
-  start_date?: string;
-  end_date?: string;
-  cover_photo_url?: string;
-  description?: string;
-}
+const SUGGESTIONS: SuggestionCard[] = [
+  {
+    id: 1,
+    cityId: 1,
+    cityName: 'Paris',
+    country: 'France',
+    title: 'Parisian Charm & Culture',
+    activities: ['Eiffel Tower visit', 'Louvre Museum', 'Seine dinner cruise'],
+    imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80',
+    category: 'Sightseeing',
+    costLabel: 'Luxury ($$$)',
+  },
+  {
+    id: 2,
+    cityId: 2,
+    cityName: 'Tokyo',
+    country: 'Japan',
+    title: 'Tokyo Neon & Temples',
+    activities: ['Senso-ji Temple', 'Shibuya food tour', 'Akihabara night walk'],
+    imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&q=80',
+    category: 'Culture',
+    costLabel: 'Moderate ($$)',
+  },
+  {
+    id: 3,
+    cityId: 4,
+    cityName: 'Rome',
+    country: 'Italy',
+    title: 'Imperial Rome & Cuisine',
+    activities: ['Colosseum tour', 'Vatican Museums', 'Trastevere food walk'],
+    imageUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80',
+    category: 'History',
+    costLabel: 'Moderate ($$)',
+  },
+  {
+    id: 4,
+    cityId: 5,
+    cityName: 'Bali',
+    country: 'Indonesia',
+    title: 'Tropical Bali Retreat',
+    activities: ['Ubud rice terraces', 'Surf lesson', 'Temple sunset'],
+    imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
+    category: 'Adventure',
+    costLabel: 'Budget ($)',
+  },
+  {
+    id: 5,
+    cityId: 3,
+    cityName: 'Goa',
+    country: 'India',
+    title: 'Sun, Sand & Goan Food',
+    activities: ['Baga Beach visit', 'Water sports', 'Goan seafood dinner'],
+    imageUrl: 'https://images.unsplash.com/photo-1512343800234-882532365801?w=800&q=80',
+    category: 'Relaxation',
+    costLabel: 'Budget ($)',
+  },
+  {
+    id: 6,
+    cityId: 6,
+    cityName: 'New York',
+    country: 'USA',
+    title: 'NYC Broadway & Skyline',
+    activities: ['Statue of Liberty', 'Broadway show', 'Central Park bike'],
+    imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80',
+    category: 'Urban',
+    costLabel: 'Luxury ($$$)',
+  },
+];
 
 export const CreateTrip: React.FC = () => {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [generalError, setGeneralError] = useState<string>('');
-  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [cities, setCities] = useState<City[]>([]);
+  const [name, setName] = useState('');
+  const [selectedCityId, setSelectedCityId] = useState<number | ''>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedSuggestionId, setSelectedSuggestionId] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState<TripFormData>({
-    name: '',
-    description: '',
-    start_date: '',
-    end_date: '',
-    cover_photo_url: '',
-    is_public: false,
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-    const trimmedName = formData.name.trim();
+  useEffect(() => {
+    let active = true;
+    getCities()
+      .then((data) => {
+        if (active) setCities(data);
+      })
+      .catch(() => {
+        if (active) setCities([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    if (!trimmedName) {
-      errors.name = 'Trip name is required.';
-    } else if (trimmedName.length < 3) {
-      errors.name = 'Trip name must be at least 3 characters long.';
-    } else if (trimmedName.length > 100) {
-      errors.name = 'Trip name cannot exceed 100 characters.';
-    }
-
-    if (!formData.start_date) {
-      errors.start_date = 'Start date is required.';
-    }
-
-    if (!formData.end_date) {
-      errors.end_date = 'End date is required.';
-    } else if (formData.start_date && formData.end_date < formData.start_date) {
-      errors.end_date = 'End date cannot be earlier than the start date.';
-    }
-
-    if (formData.description && formData.description.length > 500) {
-      errors.description = 'Description cannot exceed 500 characters.';
-    }
-
-    if (formData.cover_photo_url.trim()) {
-      const urlPattern = /^(https?:\/\/).+/i;
-      if (!urlPattern.test(formData.cover_photo_url.trim())) {
-        errors.cover_photo_url = 'Cover photo must be a valid URL starting with http:// or https://';
-      }
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-
-    // Clear individual field error on change
-    if (fieldErrors[name as keyof FormErrors]) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
+  // Handle selecting a suggestion card (Screen 4 Wireframe)
+  const handleSelectSuggestion = (s: SuggestionCard) => {
+    setSelectedSuggestionId(s.id);
+    setSelectedCityId(s.cityId);
+    if (!name || name === 'My Trip') {
+      setName(`Trip to ${s.cityName}`);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGeneralError('');
+    setError(null);
 
-    if (!validateForm()) {
+    if (!name.trim()) {
+      setError('Please enter a trip name.');
+      return;
+    }
+    if (!selectedCityId) {
+      setError('Please select a place / destination city.');
+      return;
+    }
+    if (!startDate) {
+      setError('Please select a start date.');
+      return;
+    }
+    if (!endDate) {
+      setError('Please select an end date.');
+      return;
+    }
+    if (endDate < startDate) {
+      setError('End date cannot be earlier than start date.');
       return;
     }
 
     setLoading(true);
-
     try {
-      const created = await createTrip({
-        ...formData,
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        cover_photo_url: formData.cover_photo_url.trim() || undefined,
+      // 1. Create the Trip
+      const createdTrip = await createTrip({
+        name: name.trim(),
+        description: `Multi-city trip starting in ${cities.find((c) => c.id === selectedCityId)?.name || 'destination'}`,
+        start_date: startDate,
+        end_date: endDate,
+        is_public: true,
       });
-      navigate(`/trips/${created.id}/builder`);
-    } catch (err) {
-      console.error('Failed to create trip:', err);
-      setGeneralError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to create trip. Please check your network connection and try again.'
-      );
+
+      // 2. Create the initial city stop
+      await createStop(createdTrip.id, {
+        cityId: Number(selectedCityId),
+        startDate: startDate,
+        endDate: endDate,
+        orderIndex: 0,
+      }).catch(() => {});
+
+      // 3. Navigate to Itinerary Builder
+      navigate(`/itinerary?tripId=${createdTrip.id}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create trip. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] p-4 sm:p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto font-sans">
+    <div className="min-h-screen bg-[#F9FAFB] py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto space-y-8 font-sans">
+        {/* Top Back Link */}
         <button
           type="button"
           onClick={() => navigate('/trips')}
-          className="flex items-center gap-2 text-[#0F6E6E] font-medium mb-6 hover:underline text-sm"
+          className="inline-flex items-center gap-2 text-[#0F6E6E] font-bold text-sm hover:underline"
         >
           <ArrowLeft size={18} />
           Back to My Trips
         </button>
 
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100">
-          <div className="mb-8">
-            <span className="text-xs font-bold text-[#0F6E6E] uppercase tracking-wider">
-              Step 1 of Planning
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">
-              Create New Trip Itinerary
+        {/* Form Container: Screen 4 "Plan a new trip" Form */}
+        <Card className="p-6 sm:p-8 space-y-6">
+          <div className="border-b border-gray-100 pb-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0F6E6E]/10 text-[#0F6E6E] text-xs font-bold uppercase tracking-wider mb-2">
+              <Compass size={14} />
+              Screen 4 — Trip Initialization
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              Plan a new trip
             </h1>
-            <p className="text-gray-500 mt-1 text-sm">
-              Set up your basic trip dates and destination details. You can add stops and activities in the next step.
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Select your primary destination, pick travel dates, and start assembling your multi-city schedule.
             </p>
           </div>
 
-          {generalError && (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-3">
-              <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-              <span>{generalError}</span>
+          {error && (
+            <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-xs font-semibold text-red-700 flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-500 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-            {/* Trip Name */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2"
-              >
-                Trip Name <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <MapPin
-                  className="absolute left-3.5 top-3 text-gray-400"
-                  size={18}
-                />
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  maxLength={100}
-                  placeholder="e.g. Summer in Goa, Japan Cultural Odyssey"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3 rounded-xl border text-sm outline-none transition-all ${
-                    fieldErrors.name
-                      ? 'border-red-300 bg-red-50/30 focus:border-red-500 focus:ring-1 focus:ring-red-500'
-                      : 'border-gray-200 focus:border-[#0F6E6E] focus:ring-1 focus:ring-[#0F6E6E]'
-                  }`}
-                />
-              </div>
-              {fieldErrors.name && (
-                <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                  <AlertCircle size={13} /> {fieldErrors.name}
-                </p>
-              )}
-            </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="start_date"
-                  className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2"
-                >
-                  Start Date <span className="text-red-500">*</span>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Trip Name */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Trip Name: <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar
-                    className="absolute left-3.5 top-3 text-gray-400"
-                    size={18}
-                  />
+                  <MapPin className="absolute left-3.5 top-3 text-gray-400" size={18} />
                   <input
-                    id="start_date"
-                    name="start_date"
-                    type="date"
+                    type="text"
+                    placeholder="e.g. European Odyssey, Summer in Goa"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
-                    value={formData.start_date}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl border text-sm outline-none transition-all ${
-                      fieldErrors.start_date
-                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                        : 'border-gray-200 focus:border-[#0F6E6E]'
-                    }`}
+                    className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 outline-none focus:border-[#0F6E6E] bg-white font-medium"
                   />
                 </div>
-                {fieldErrors.start_date && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                    <AlertCircle size={13} /> {fieldErrors.start_date}
-                  </p>
-                )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="end_date"
-                  className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2"
-                >
-                  End Date <span className="text-red-500">*</span>
+              {/* Select a Place */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Select a Place : <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar
-                    className="absolute left-3.5 top-3 text-gray-400"
-                    size={18}
-                  />
-                  <input
-                    id="end_date"
-                    name="end_date"
-                    type="date"
+                  <Compass className="absolute left-3.5 top-3 text-[#0F6E6E]" size={18} />
+                  <select
+                    value={selectedCityId}
+                    onChange={(e) => setSelectedCityId(e.target.value ? Number(e.target.value) : '')}
                     required
-                    min={formData.start_date || undefined}
-                    value={formData.end_date}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl border text-sm outline-none transition-all ${
-                      fieldErrors.end_date
-                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                        : 'border-gray-200 focus:border-[#0F6E6E]'
-                    }`}
+                    className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 outline-none focus:border-[#0F6E6E] bg-white font-medium cursor-pointer"
+                  >
+                    <option value="">— Select a Destination Place —</option>
+                    {cities.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}, {c.country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Start Date: <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 outline-none focus:border-[#0F6E6E] bg-white font-medium"
                   />
                 </div>
-                {fieldErrors.end_date && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                    <AlertCircle size={13} /> {fieldErrors.end_date}
-                  </p>
-                )}
               </div>
-            </div>
 
-            {/* Description */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label
-                  htmlFor="description"
-                  className="block text-xs font-bold text-gray-700 uppercase tracking-wider"
-                >
-                  Trip Description
+              {/* End Date */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  End Date: <span className="text-red-500">*</span>
                 </label>
-                <span className="text-xs text-gray-400">
-                  {formData.description.length}/500
-                </span>
-              </div>
-              <div className="relative">
-                <FileText
-                  className="absolute left-3.5 top-3.5 text-gray-400"
-                  size={18}
-                />
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={3}
-                  maxLength={500}
-                  placeholder="Describe your travel goals, interests, or companions..."
-                  value={formData.description}
-                  onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3 rounded-xl border text-sm outline-none transition-all ${
-                    fieldErrors.description
-                      ? 'border-red-300 bg-red-50/30'
-                      : 'border-gray-200 focus:border-[#0F6E6E]'
-                  }`}
-                />
-              </div>
-              {fieldErrors.description && (
-                <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                  <AlertCircle size={13} /> {fieldErrors.description}
-                </p>
-              )}
-            </div>
-
-            {/* Cover Photo URL */}
-            <div>
-              <label
-                htmlFor="cover_photo_url"
-                className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2"
-              >
-                Cover Photo URL (Optional)
-              </label>
-              <div className="relative">
-                <ImageIcon
-                  className="absolute left-3.5 top-3 text-gray-400"
-                  size={18}
-                />
-                <input
-                  id="cover_photo_url"
-                  name="cover_photo_url"
-                  type="url"
-                  placeholder="https://images.unsplash.com/photo-..."
-                  value={formData.cover_photo_url}
-                  onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3 rounded-xl border text-sm outline-none transition-all ${
-                    fieldErrors.cover_photo_url
-                      ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                      : 'border-gray-200 focus:border-[#0F6E6E]'
-                  }`}
-                />
-              </div>
-              {fieldErrors.cover_photo_url && (
-                <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                  <AlertCircle size={13} /> {fieldErrors.cover_photo_url}
-                </p>
-              )}
-            </div>
-
-            {/* Privacy toggle */}
-            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {formData.is_public ? (
-                  <Globe className="text-[#0F6E6E]" size={20} />
-                ) : (
-                  <Lock className="text-gray-500" size={20} />
-                )}
-                <div>
-                  <div className="text-sm font-bold text-gray-900">
-                    {formData.is_public ? 'Public Itinerary' : 'Private Itinerary'}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {formData.is_public
-                      ? 'Anyone with the link can view and copy this trip plan.'
-                      : 'Only you can view and edit this itinerary.'}
-                  </div>
+                <div className="relative">
+                  <Calendar className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                  <input
+                    type="date"
+                    min={startDate || undefined}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 outline-none focus:border-[#0F6E6E] bg-white font-medium"
+                  />
                 </div>
               </div>
-
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="is_public"
-                  checked={formData.is_public}
-                  onChange={handleChange}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0F6E6E]"></div>
-              </label>
             </div>
 
-            {/* Form Actions */}
-            <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-3">
+            {/* Form Submit Row */}
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/trips')}
-                disabled={loading}
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition-colors"
               >
                 Cancel
               </button>
-
-              <button
+              <Button
+                variant="accent"
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2.5 rounded-xl bg-[#FF7A59] hover:bg-[#e66948] text-white text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 text-sm font-extrabold shadow-md"
               >
-                {loading ? 'Creating Trip...' : 'Continue to Itinerary Builder →'}
-              </button>
+                {loading ? 'Creating Trip...' : 'Create Trip →'}
+              </Button>
             </div>
           </form>
+        </Card>
+
+        {/* Suggestions Section: Screen 4 "Suggestion for Places to Visit/Activites to preform" */}
+        <div className="space-y-5">
+          <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+            <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+              <Sparkles size={20} className="text-[#FF7A59]" />
+              Suggestion for Places to Visit / Activites to preform
+            </h2>
+            <span className="text-xs font-bold text-gray-400">Click a card to auto-select</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SUGGESTIONS.map((s) => {
+              const isSelected = selectedSuggestionId === s.id;
+
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => handleSelectSuggestion(s)}
+                  className={`bg-white rounded-3xl border transition-all overflow-hidden cursor-pointer flex flex-col justify-between group ${
+                    isSelected
+                      ? 'border-[#0F6E6E] shadow-md ring-2 ring-[#0F6E6E]/20'
+                      : 'border-gray-200 shadow-xs hover:shadow-md'
+                  }`}
+                >
+                  <div className="relative h-48 overflow-hidden bg-gray-100">
+                    <img
+                      src={s.imageUrl}
+                      alt={s.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                    <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full">
+                      {s.country}
+                    </div>
+
+                    <div className="absolute top-3 right-3 bg-[#0F6E6E] text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
+                      {s.category}
+                    </div>
+
+                    <div className="absolute bottom-3 left-4 right-4 text-white">
+                      <h3 className="font-extrabold text-xl leading-tight drop-shadow-sm">{s.title}</h3>
+                      <p className="text-xs text-gray-200">{s.cityName}, {s.country}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
+                        Suggested Activities ({s.activities.length})
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {s.activities.map((act, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700"
+                          >
+                            {act}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#0F6E6E]">
+                        {s.costLabel}
+                      </span>
+                      <button
+                        type="button"
+                        className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-[#0F6E6E] text-white'
+                            : 'bg-gray-100 text-gray-700 group-hover:bg-[#0F6E6E] group-hover:text-white'
+                        }`}
+                      >
+                        {isSelected ? <Check size={14} /> : <Plus size={14} />}
+                        {isSelected ? 'Selected' : 'Use Suggestion'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default CreateTrip;

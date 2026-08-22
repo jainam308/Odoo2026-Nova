@@ -10,6 +10,7 @@ export interface User {
   country?: string | null;
   photo_url?: string | null;
   bio?: string | null;
+  is_admin?: boolean;
   created_at?: string;
 }
 

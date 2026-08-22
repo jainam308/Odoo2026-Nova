@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authMiddleware } from '../middleware/auth.middleware';
 import { adminMiddleware } from '../middleware/admin.middleware';
 import {
   getStats,
@@ -18,7 +19,8 @@ import {
 
 const router = Router();
 
-// Apply admin protection middleware
+// Apply auth & admin protection middleware
+router.use(authMiddleware);
 router.use(adminMiddleware);
 
 // Admin System Overview Stats & Analytics

@@ -130,17 +130,19 @@ function NavigationBar() {
             <span>Itinerary Builder</span>
           </Link>
 
-          <Link
-            to="/admin"
-            className={`text-sm font-bold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
-              isCurrent('/admin')
-                ? 'bg-purple-700 text-white shadow-sm'
-                : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-            }`}
-          >
-            <Shield className="h-4 w-4" />
-            <span>Admin</span>
-          </Link>
+          {user && user.is_admin && (
+            <Link
+              to="/admin"
+              className={`text-sm font-bold flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+                isCurrent('/admin')
+                  ? 'bg-purple-700 text-white shadow-sm'
+                  : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
 
           {user ? (
             <>
@@ -194,12 +196,19 @@ function NavigationBar() {
 }
 
 // ──────────────────────────────────────────────
-// Protected Route guard (Module A auth)
+// Protected Route guards
 // ──────────────────────────────────────────────
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!user || !user.is_admin) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -243,8 +252,15 @@ function App() {
               {/* ── AI Assistant Module ── */}
               <Route path="/ai-chat" element={<AIChatPage />} />
 
-              {/* ── Admin Panel Module ── */}
-              <Route path="/admin" element={<AdminDashboard />} />
+              {/* ── Admin Panel Module (Strictly Admin Only) ── */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
 
               {/* ── Module C – Stops & Calendar Timeline ── */}
               <Route path="/itinerary/*" element={<ItineraryRoutes />} />
