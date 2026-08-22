@@ -75,11 +75,19 @@ export const Dashboard: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-3">
               <button
+                onClick={() => navigate('/ai-chat')}
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF7A59] to-[#FF5722] hover:from-[#e66948] hover:to-[#e64a19] text-white font-black text-sm shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer ring-4 ring-[#FF7A59]/30"
+              >
+                <Sparkles size={18} className="animate-spin-slow" />
+                ✨ Plan with AI Assistant
+              </button>
+
+              <button
                 onClick={() => navigate('/trips/new')}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF7A59] hover:bg-[#e66948] text-white font-bold text-sm shadow-md transition-all transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-sm backdrop-blur-md border border-white/20 shadow-sm transition-all transform hover:-translate-y-0.5 cursor-pointer"
               >
                 <Plus size={18} />
-                Plan New Trip
+                Custom Manual Trip
               </button>
 
               <Link

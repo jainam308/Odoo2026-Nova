@@ -189,6 +189,16 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+
+          {/* Floating AI Assistant Action Button */}
+          <Link
+            to="/ai-chat"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-gradient-to-r from-[#FF7A59] to-[#FF5722] text-white font-bold text-sm shadow-2xl hover:shadow-[#FF7A59]/40 hover:scale-105 transition-all duration-300 ring-4 ring-white"
+            title="Ask AI to plan your trip"
+          >
+            <Sparkles className="h-5 w-5 animate-pulse" />
+            <span className="drop-shadow-sm">Plan with AI</span>
+          </Link>
         </div>
       </AuthProvider>
     </BrowserRouter>
