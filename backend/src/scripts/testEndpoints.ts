@@ -27,8 +27,12 @@ async function runTests() {
   }
 
   try {
-    // 1. Health Check
-    const healthRes = await fetch(`${BASE_URL}/health`);
+    // 1. Health Check (with slight warm-up for remote Neon TLS handshake)
+    let healthRes = await fetch(`${BASE_URL}/health`);
+    if (healthRes.status !== 200) {
+      await new Promise((r) => setTimeout(r, 500));
+      healthRes = await fetch(`${BASE_URL}/health`);
+    }
     const healthData = (await healthRes.json()) as ApiResponse;
     assert(healthRes.status === 200 && healthData.success === true, 'GET /api/health returns status 200 and healthy');
 

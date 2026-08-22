@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Card, Input, Button, Badge } from '../../components';
-import { Mail, Phone, MapPin, Edit3, CheckCircle, Calendar, Compass } from 'lucide-react';
+import { Card, Input, Button, Badge, LoadingSpinner } from '../../components';
+import { Mail, Phone, MapPin, Edit3, CheckCircle, Calendar, Compass, Plus } from 'lucide-react';
+import { fetchTrips } from '../../api/trips.api';
+import { Trip } from '../../types/trip';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 export const ProfilePage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [tripsLoading, setTripsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [userTrips, setUserTrips] = useState<Trip[]>([]);
 
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
@@ -19,43 +26,57 @@ export const ProfilePage: React.FC = () => {
     photo_url: user?.photo_url || '',
   });
 
-  const plannedTrips = [
-    {
-      id: 1,
-      name: 'European Summer Odyssey',
-      dates: 'Jun 10 - Jun 25, 2026',
-      stops: ['Paris', 'Rome', 'Barcelona'],
-      image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=500&q=80',
-      status: 'upcoming',
-    },
-    {
-      id: 2,
-      name: 'Japan Wonders: Tokyo to Kyoto',
-      dates: 'Oct 01 - Oct 14, 2026',
-      stops: ['Tokyo', 'Kyoto', 'Osaka'],
-      image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=500&q=80',
-      status: 'upcoming',
-    },
-  ];
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        phone: user.phone || '',
+        city: user.city || '',
+        country: user.country || '',
+        bio: user.bio || '',
+        photo_url: user.photo_url || '',
+      });
+    }
+  }, [user]);
 
-  const previousTrips = [
-    {
-      id: 3,
-      name: 'South African Safari & Cape Town',
-      dates: 'Jan 15 - Jan 28, 2025',
-      stops: ['Cape Town', 'Kruger National Park'],
-      image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=500&q=80',
-      status: 'completed',
-    },
-    {
-      id: 4,
-      name: 'Tropical Bali Retreat',
-      dates: 'Aug 04 - Aug 18, 2024',
-      stops: ['Ubud', 'Canggu', 'Nusa Penida'],
-      image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=500&q=80',
-      status: 'completed',
-    },
-  ];
+  useEffect(() => {
+    let ignore = false;
+    const loadTrips = async () => {
+      setTripsLoading(true);
+      try {
+        const allTrips = await fetchTrips();
+        if (!ignore) {
+          setUserTrips(allTrips);
+        }
+      } catch (err) {
+        console.error('Failed to load user profile trips:', err);
+      } finally {
+        if (!ignore) setTripsLoading(false);
+      }
+    };
+    loadTrips();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const plannedTrips = userTrips.filter((t) => {
+    if (!t.end_date) return true;
+    const end = new Date(t.end_date);
+    end.setHours(23, 59, 59, 999);
+    return end >= now;
+  });
+
+  const previousTrips = userTrips.filter((t) => {
+    if (!t.end_date) return false;
+    const end = new Date(t.end_date);
+    end.setHours(23, 59, 59, 999);
+    return end < now;
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +92,12 @@ export const ProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDates = (start?: string, end?: string) => {
+    if (!start && !end) return 'Flexible Dates';
+    if (start && !end) return `From ${start}`;
+    return `${start} - ${end}`;
   };
 
   return (
@@ -112,7 +139,7 @@ export const ProfilePage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
             {user?.photo_url ? (
               <img
-                src={user.photo_url}
+                src={safeImageUrl(user.photo_url)}
                 alt="Profile"
                 style={{
                   width: '96px',
@@ -276,54 +303,80 @@ export const ProfilePage: React.FC = () => {
 
       {/* Planned Trips Section matching Screen 7 */}
       <section style={{ marginBottom: '40px' }}>
-        <h2
-          style={{
-            fontSize: '22px',
-            fontWeight: 800,
-            color: 'var(--color-primary)',
-            letterSpacing: '-0.02em',
-            marginBottom: '18px',
-          }}
-        >
-          Planned Trips
-        </h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {plannedTrips.map((trip) => (
-            <Card key={trip.id} hoverable padding="none" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ position: 'relative', width: '100%', height: '160px' }}>
-                <img
-                  src={trip.image}
-                  alt={trip.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
-                  <Badge variant={trip.status}>{trip.status}</Badge>
-                </div>
-              </div>
-
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                  {trip.name}
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  <Calendar size={14} />
-                  <span>{trip.dates}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  <Compass size={14} />
-                  <span>Stops: {trip.stops.join(' → ')}</span>
-                </div>
-
-                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="primary" size="sm">
-                    View
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+          <h2
+            style={{
+              fontSize: '22px',
+              fontWeight: 800,
+              color: 'var(--color-primary)',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Planned Trips ({plannedTrips.length})
+          </h2>
+          <Button size="sm" variant="secondary" leftIcon={<Plus size={14} />} onClick={() => navigate('/trips/new')}>
+            New Trip
+          </Button>
         </div>
+
+        {tripsLoading ? (
+          <LoadingSpinner label="Loading your trips..." />
+        ) : plannedTrips.length === 0 ? (
+          <Card style={{ padding: '32px', textAlign: 'center' }}>
+            <Compass size={32} style={{ color: 'var(--color-text-muted)', margin: '0 auto 12px' }} />
+            <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+              No active or upcoming trips planned yet.
+            </p>
+            <Button variant="accent" size="sm" onClick={() => navigate('/trips/new')}>
+              Plan Your First Trip
+            </Button>
+          </Card>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            {plannedTrips.map((trip) => {
+              const stopNames = trip.stops?.map((s) => s.city_name || (s as any).name).filter(Boolean) || [];
+              return (
+                <Card key={trip.id} hoverable padding="none" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '160px' }}>
+                    <img
+                      src={safeImageUrl(trip.cover_photo_url)}
+                      alt={trip.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+                      <Badge variant="upcoming">Upcoming</Badge>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {trip.name}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                      <Calendar size={14} />
+                      <span>{formatDates(trip.start_date, trip.end_date)}</span>
+                    </div>
+                    {stopNames.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                        <Compass size={14} />
+                        <span>Stops: {stopNames.slice(0, 3).join(' → ')}</span>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/trips/${trip.id}/builder`)}>
+                        Edit
+                      </Button>
+                      <Button variant="primary" size="sm" onClick={() => navigate(`/trips/${trip.id}`)}>
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Previous Trips Section matching Screen 7 */}
@@ -337,45 +390,60 @@ export const ProfilePage: React.FC = () => {
             marginBottom: '18px',
           }}
         >
-          Previous Trips
+          Previous Trips ({previousTrips.length})
         </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {previousTrips.map((trip) => (
-            <Card key={trip.id} hoverable padding="none" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ position: 'relative', width: '100%', height: '160px' }}>
-                <img
-                  src={trip.image}
-                  alt={trip.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
-                  <Badge variant={trip.status}>{trip.status}</Badge>
-                </div>
-              </div>
+        {tripsLoading ? (
+          <LoadingSpinner label="Loading previous trips..." />
+        ) : previousTrips.length === 0 ? (
+          <Card style={{ padding: '24px', textAlign: 'center' }}>
+            <p style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>
+              No completed trips yet. Completed journeys will automatically appear here!
+            </p>
+          </Card>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            {previousTrips.map((trip) => {
+              const stopNames = trip.stops?.map((s) => s.city_name || (s as any).name).filter(Boolean) || [];
+              return (
+                <Card key={trip.id} hoverable padding="none" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '160px' }}>
+                    <img
+                      src={safeImageUrl(trip.cover_photo_url)}
+                      alt={trip.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+                      <Badge variant="completed">Completed</Badge>
+                    </div>
+                  </div>
 
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                  {trip.name}
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  <Calendar size={14} />
-                  <span>{trip.dates}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  <Compass size={14} />
-                  <span>Stops: {trip.stops.join(' → ')}</span>
-                </div>
+                  <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {trip.name}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                      <Calendar size={14} />
+                      <span>{formatDates(trip.start_date, trip.end_date)}</span>
+                    </div>
+                    {stopNames.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                        <Compass size={14} />
+                        <span>Stops: {stopNames.slice(0, 3).join(' → ')}</span>
+                      </div>
+                    )}
 
-                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="secondary" size="sm">
-                    View
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+                    <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button variant="secondary" size="sm" onClick={() => navigate(`/trips/${trip.id}`)}>
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

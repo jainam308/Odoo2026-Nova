@@ -1,4 +1,7 @@
-export function safeImageUrl(value: string | null | undefined, fallback: string): string {
+export function safeImageUrl(
+  value: string | null | undefined,
+  fallback: string = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'
+): string {
   if (!value) return fallback;
 
   try {

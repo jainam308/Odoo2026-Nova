@@ -1,30 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { discoveryApi, City } from '../../api/discovery.api';
+import { fetchTrips } from '../../api/trips.api';
+import { Trip } from '../../types/trip';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Badge, LoadingSpinner } from '../../components';
 import { Search, Compass, MapPin, Calendar, Sparkles, ArrowRight, DollarSign } from 'lucide-react';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [cities, setCities] = useState<City[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchTopCities = async () => {
+    let ignore = false;
+    const fetchTopData = async () => {
       try {
-        const data = await discoveryApi.getCities();
-        setCities(data);
+        const [citiesData, tripsData] = await Promise.all([
+          discoveryApi.getCities(),
+          fetchTrips(),
+        ]);
+        if (!ignore) {
+          setCities(citiesData);
+          setTrips(tripsData);
+        }
       } catch (err) {
-        console.error('Failed to load cities:', err);
+        console.error('Failed to load dashboard data:', err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
-    fetchTopCities();
+    fetchTopData();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -36,26 +50,11 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const sampleTrips = [
-    {
-      id: 1,
-      name: 'European Summer Odyssey',
-      description: 'Paris, Rome, Barcelona • 15 Days',
-      image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=600&q=80',
-      status: 'upcoming',
-      dates: 'Jun 10 - Jun 25, 2026',
-      stops: 3,
-    },
-    {
-      id: 2,
-      name: 'Japan Wonders: Tokyo to Kyoto',
-      description: 'Tokyo, Kyoto, Osaka • 14 Days',
-      image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80',
-      status: 'upcoming',
-      dates: 'Oct 01 - Oct 14, 2026',
-      stops: 3,
-    },
-  ];
+  const formatDates = (start?: string, end?: string) => {
+    if (!start && !end) return 'Flexible Dates';
+    if (start && !end) return `From ${start}`;
+    return `${start} - ${end}`;
+  };
 
   return (
     <div style={{ width: '100%', paddingBottom: '64px' }}>
@@ -194,7 +193,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <LoadingSpinner text="Loading top destinations..." />
+            <LoadingSpinner label="Loading top destinations..." />
           ) : (
             <div
               style={{
@@ -273,10 +272,10 @@ export const DashboardPage: React.FC = () => {
                   letterSpacing: '-0.02em',
                 }}
               >
-                {user ? 'Your Planned Trips' : 'Featured Community Journeys'}
+                {user ? 'Your Planned Trips' : 'Featured Journeys'}
               </h2>
               <p style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>
-                {user ? 'Jump straight back into your saved itineraries' : 'Explore popular journeys designed by world travelers'}
+                {user ? 'Jump straight back into your saved itineraries' : 'Explore popular journeys from the database'}
               </p>
             </div>
 
@@ -289,63 +288,77 @@ export const DashboardPage: React.FC = () => {
             </Button>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-              gap: '24px',
-            }}
-          >
-            {sampleTrips.map((trip) => (
-              <Card
-                key={trip.id}
-                hoverable
-                padding="none"
-                style={{ display: 'flex', flexDirection: 'column' }}
-              >
-                <div style={{ position: 'relative', width: '100%', height: '190px' }}>
-                  <img
-                    src={trip.image}
-                    alt={trip.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                    <Badge variant={trip.status}>{trip.status}</Badge>
-                  </div>
-                </div>
-
-                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)' }}>
-                    {trip.name}
-                  </h3>
-                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                    {trip.description}
-                  </p>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingTop: '10px',
-                      borderTop: '1px solid var(--color-border)',
-                      fontSize: '12px',
-                      color: 'var(--color-text-muted)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Calendar size={14} />
-                      <span>{trip.dates}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Compass size={14} />
-                      <span>{trip.stops} Stops</span>
+          {trips.length === 0 ? (
+            <Card style={{ padding: '32px', textAlign: 'center' }}>
+              <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                No trips created yet. Start designing your first multi-city trip now!
+              </p>
+              <Button variant="accent" size="sm" onClick={() => navigate('/trips/new')}>
+                Create Trip
+              </Button>
+            </Card>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: '24px',
+              }}
+            >
+              {trips.slice(0, 6).map((trip) => (
+                <Card
+                  key={trip.id}
+                  hoverable
+                  padding="none"
+                  onClick={() => navigate(`/trips/${trip.id}`)}
+                  style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+                >
+                  <div style={{ position: 'relative', width: '100%', height: '190px' }}>
+                    <img
+                      src={safeImageUrl(trip.cover_photo_url)}
+                      alt={trip.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                      <Badge variant={trip.is_public ? 'upcoming' : 'default'}>
+                        {trip.is_public ? 'Public' : 'Private'}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+
+                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {trip.name}
+                    </h3>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineClamp: 2 }}>
+                      {trip.description || 'Custom multi-city travel itinerary'}
+                    </p>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingTop: '10px',
+                        borderTop: '1px solid var(--color-border)',
+                        fontSize: '12px',
+                        color: 'var(--color-text-muted)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Calendar size={14} />
+                        <span>{formatDates(trip.start_date, trip.end_date)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Compass size={14} />
+                        <span>{trip.stops?.length || 0} Stops</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>
