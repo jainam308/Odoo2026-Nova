@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Compass, PlusCircle, MapPin, ListOrdered, User, LogIn, Sparkles } from 'lucide-react';
+import { Compass, PlusCircle, MapPin, ListOrdered, Calendar, User, LogIn, Shield, Sparkles } from 'lucide-react';
 
 // Module A pages
 import LoginPage from './pages/auth/LoginPage';
@@ -19,8 +19,12 @@ import { Dashboard } from './pages/trips/Dashboard';
 import { PublicTripView } from './pages/trips/PublicTripView';
 import { ExploreDestinations } from './pages/trips/ExploreDestinations';
 
-// Module C routes
+// Admin Panel page
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+// Module C routes & pages
 import ItineraryRoutes from './pages/itinerary/ItineraryRoutes';
+import GlobalCalendarPage from './pages/itinerary/GlobalCalendarPage';
 
 // AI Module page
 import AIChatPage from './pages/ai-chat/AIChatPage';
@@ -39,7 +43,7 @@ function NavigationBar() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 text-xl font-black text-[#0F6E6E] tracking-tight">
@@ -50,10 +54,10 @@ function NavigationBar() {
         </Link>
 
         {/* Nav Links */}
-        <nav className="flex items-center gap-2 sm:gap-3">
+        <nav className="flex items-center gap-1 sm:gap-2">
           <Link
             to="/ai-chat"
-            className={`text-sm font-bold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+            className={`text-sm font-bold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
               isCurrent('/ai-chat')
                 ? 'bg-[#FF7A59]/15 text-[#FF7A59]'
                 : 'text-[#FF7A59] hover:bg-[#FF7A59]/10'
@@ -65,44 +69,88 @@ function NavigationBar() {
 
           <Link
             to="/explore"
-            className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
               isCurrent('/explore') || isCurrent('/discover') || isCurrent('/cities')
                 ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
             <MapPin className="h-4 w-4 text-[#0F6E6E]" />
-            Explore
+            <span>Explore</span>
           </Link>
 
           <Link
             to="/trips"
-            className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
               isCurrent('/trips') && !isCurrent('/trips/new')
                 ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
             <ListOrdered className="h-4 w-4 text-[#0F6E6E]" />
-            My Trips
+            <span>My Trips</span>
+          </Link>
+
+          <Link
+            to="/calendar"
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
+              isCurrent('/calendar')
+                ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Calendar className="h-4 w-4 text-[#0F6E6E]" />
+            <span>Calendar</span>
+          </Link>
+
+          <Link
+            to="/itinerary"
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
+              isCurrent('/itinerary')
+                ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Compass className="h-4 w-4 text-[#0F6E6E]" />
+            <span>Itinerary Builder</span>
+          </Link>
+
+          <Link
+            to="/admin"
+            className={`text-sm font-bold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
+              isCurrent('/admin')
+                ? 'bg-purple-700 text-white shadow-sm'
+                : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+            }`}
+          >
+            <Shield className="h-4 w-4" />
+            <span>Admin</span>
           </Link>
 
           {user ? (
             <>
               <Link
                 to="/profile"
-                className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+                className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
                   isCurrent('/profile')
                     ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                <User className="h-4 w-4 text-[#0F6E6E]" />
-                Profile
+                {user.photo_url ? (
+                  <img
+                    src={user.photo_url}
+                    alt={user.first_name || 'Profile'}
+                    className="w-5 h-5 rounded-full object-cover border border-[#0F6E6E]"
+                  />
+                ) : (
+                  <User className="h-4 w-4 text-[#0F6E6E]" />
+                )}
+                <span>{user.first_name || 'Profile'}</span>
               </Link>
               <button
                 onClick={logout}
-                className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-2 rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
+                className="text-sm font-medium text-gray-500 hover:text-gray-800 px-2.5 py-2 rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
               >
                 Logout
               </button>
@@ -110,19 +158,19 @@ function NavigationBar() {
           ) : (
             <Link
               to="/login"
-              className="text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-all"
+              className="text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-all"
             >
               <LogIn className="h-4 w-4" />
-              Login
+              <span>Login</span>
             </Link>
           )}
 
           <Link
             to="/trips/new"
-            className="text-sm font-bold text-white bg-[#FF7A59] hover:bg-[#e66948] flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-sm transition-all"
+            className="text-sm font-bold text-white bg-[#FF7A59] hover:bg-[#e66948] flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-sm transition-all ml-1"
           >
             <PlusCircle className="h-4 w-4" />
-            Plan Trip
+            <span>Plan Trip</span>
           </Link>
         </nav>
       </div>
@@ -180,11 +228,14 @@ function App() {
               {/* ── AI Assistant Module ── */}
               <Route path="/ai-chat" element={<AIChatPage />} />
 
+              {/* ── Admin Panel Module ── */}
+              <Route path="/admin" element={<AdminDashboard />} />
+
               {/* ── Module C – Stops & Calendar Timeline ── */}
               <Route path="/itinerary/*" element={<ItineraryRoutes />} />
+              <Route path="/calendar" element={<GlobalCalendarPage />} />
 
               {/* Fallback routes */}
-              <Route path="/calendar" element={<Navigate to="/profile" replace />} />
               <Route path="/community" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

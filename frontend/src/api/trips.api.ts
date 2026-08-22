@@ -121,6 +121,19 @@ export const deleteStopFromTrip = async (tripId: number, stopId: number): Promis
 };
 
 /**
+ * PUT /api/trips/:id/stops/reorder - Reorder stops within a trip
+ */
+export const reorderTripStops = async (tripId: number, stopIds: number[]): Promise<boolean> => {
+  try {
+    const res = await apiClient.put(`/trips/${tripId}/stops/reorder`, { stopIds });
+    return res.data?.success ?? true;
+  } catch (err) {
+    console.error(`Error reordering stops for trip ${tripId}:`, err);
+    return false;
+  }
+};
+
+/**
  * POST /api/trips/:id/stops/:stopId/activities - Add scheduled activity to stop in database
  */
 export const addActivityToStop = async (

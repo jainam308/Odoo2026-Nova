@@ -28,8 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
     { label: 'Explore', path: '/', icon: <Compass size={16} /> },
     { label: 'Discover', path: '/discover', icon: <MapPin size={16} /> },
     { label: 'My Trips', path: '/trips', icon: <Globe size={16} /> },
-    { label: 'Calendar', path: '/calendar', icon: <Calendar size={16} /> },
-    { label: 'Community', path: '/community', icon: <Users size={16} /> },
+    { label: 'Itinerary Builder', path: '/itinerary', icon: <Calendar size={16} /> },
+    { label: 'Admin Panel', path: '/admin', icon: <Users size={16} /> },
   ];
 
   const getInitials = () => {

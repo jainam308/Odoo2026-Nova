@@ -3,6 +3,7 @@ import cors from 'cors';
 import db from './db';
 import routes from './routes';
 import stopsRouter from './routes/stops.routes';
+import adminRouter from './routes/admin.routes';
 import errorHandler from './middleware/errorHandler';
 
 const app: Express = express();
@@ -42,6 +43,9 @@ app.use('/api', routes);
 
 // Mount Module C Itinerary & Stops Routes
 app.use('/api', stopsRouter);
+
+// Mount Admin Panel Routes
+app.use('/api/admin', adminRouter);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

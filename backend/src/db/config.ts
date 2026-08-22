@@ -18,7 +18,7 @@ export const dbConfig: PoolConfig = {
   connectionString: DATABASE_URL,
   ssl: isProduction
     ? { rejectUnauthorized: true }
-    : { rejectUnauthorized: false },
+    : false,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
