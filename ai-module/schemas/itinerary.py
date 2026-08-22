@@ -1,6 +1,6 @@
 from typing import List, Optional
+from pydantic import BaseModel, field_validator
 
-from pydantic import BaseModel
 
 
 class PlanRequest(BaseModel):
@@ -10,6 +10,28 @@ class PlanRequest(BaseModel):
     end_date: Optional[str] = None
     budget: Optional[float] = None
 
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        value = value.strip()
+
+        if not value:
+            raise ValueError("Message cannot be empty")
+
+        return value
+    
+    @field_validator("budget", mode="before")
+    @classmethod
+    def validate_budget(cls, value):
+        if value == "" or value is None:
+            return None
+
+        value = float(value)
+
+        if value < 0:
+            raise ValueError("Budget cannot be negative")
+
+        return value
 
 class ActivitySuggestion(BaseModel):
     name: str
