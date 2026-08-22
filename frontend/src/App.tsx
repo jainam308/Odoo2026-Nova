@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Compass, PlusCircle, MapPin, ListOrdered, User, LogIn } from 'lucide-react';
+import { Compass, PlusCircle, MapPin, ListOrdered, User, LogIn, Sparkles } from 'lucide-react';
 
 // Module A pages
 import LoginPage from './pages/auth/LoginPage';
@@ -21,6 +21,9 @@ import { ExploreDestinations } from './pages/trips/ExploreDestinations';
 
 // Module C routes
 import ItineraryRoutes from './pages/itinerary/ItineraryRoutes';
+
+// AI Module page
+import AIChatPage from './pages/ai-chat/AIChatPage';
 
 // ──────────────────────────────────────────────
 // Shared Navigation Bar (combines all modules)
@@ -48,6 +51,18 @@ function NavigationBar() {
 
         {/* Nav Links */}
         <nav className="flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/ai-chat"
+            className={`text-sm font-bold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+              isCurrent('/ai-chat')
+                ? 'bg-[#FF7A59]/15 text-[#FF7A59]'
+                : 'text-[#FF7A59] hover:bg-[#FF7A59]/10'
+            }`}
+          >
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            <span>AI Planner</span>
+          </Link>
+
           <Link
             to="/explore"
             className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
@@ -87,7 +102,7 @@ function NavigationBar() {
               </Link>
               <button
                 onClick={logout}
-                className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-2 rounded-xl hover:bg-gray-50 transition-all"
+                className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-2 rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
               >
                 Logout
               </button>
@@ -161,6 +176,9 @@ function App() {
               <Route path="/trips/:id" element={<ItineraryView />} />
               <Route path="/explore" element={<ExploreDestinations />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+
+              {/* ── AI Assistant Module ── */}
+              <Route path="/ai-chat" element={<AIChatPage />} />
 
               {/* ── Module C – Stops & Calendar Timeline ── */}
               <Route path="/itinerary/*" element={<ItineraryRoutes />} />

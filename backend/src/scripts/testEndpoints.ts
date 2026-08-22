@@ -176,7 +176,20 @@ async function runTests() {
     const catData = (await catRes.json()) as ApiResponse<any[]>;
     assert(catRes.status === 200 && Boolean(catData.data && catData.data.every((a: any) => a.category.toLowerCase() === 'food')), 'GET /api/activities?category=food filters activities correctly');
 
-    console.log(`\n🏁 Validation & Google OAuth Test Run Summary: ${passed} passed, ${failed} failed.`);
+    // 15. POST /api/ai/plan (AI Trip Planning Assistant)
+    const aiRes = await fetch(`${BASE_URL}/ai/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Plan a 3-day beach trip to Goa under 10000',
+        city: 'Goa',
+        budget: 10000
+      })
+    });
+    const aiData = (await aiRes.json()) as ApiResponse<{ days: any[]; total_estimated_cost: number }>;
+    assert(aiRes.status === 200 && Boolean(aiData.data && Array.isArray(aiData.data.days) && aiData.data.days.length > 0 && typeof aiData.data.total_estimated_cost === 'number'), 'POST /api/ai/plan returns structured day-by-day itinerary');
+
+    console.log(`\n🏁 Complete Test Suite Run Summary: ${passed} passed, ${failed} failed.`);
   } catch (err) {
     console.error('💥 Test run encountered error:', err);
     failed++;

@@ -4,6 +4,7 @@ import usersRoutes from '../modules/users/users.routes';
 import citiesRoutes from '../modules/discovery/cities.routes';
 import activitiesRoutes from '../modules/discovery/activities.routes';
 import tripsRouter from './trips.routes';
+import aiRoutes from './ai.routes';
 
 const router = Router();
 
@@ -15,5 +16,8 @@ router.use('/activities', activitiesRoutes);
 
 // Module B – Trip Itinerary Builder
 router.use('/trips', tripsRouter);
+
+// AI Module – Trip Planning Assistant
+router.use('/ai', aiRoutes);
 
 export default router;
