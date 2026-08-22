@@ -5,10 +5,10 @@ import Button from './Button';
 
 export interface NavbarUser {
   id?: number;
-  first_name?: string;
-  last_name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
   email?: string;
-  photo_url?: string;
+  photo_url?: string | null;
 }
 
 export interface NavbarProps {
