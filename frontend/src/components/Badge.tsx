@@ -1,28 +1,73 @@
-type Tone = 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'neutral';
+import React from 'react';
 
-const tones: Record<Tone, string> = {
-  primary: 'bg-primary/10 text-primary',
-  accent: 'bg-accent/10 text-accent-dark',
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
-  danger: 'bg-danger/10 text-danger',
-  neutral: 'bg-border/60 text-muted',
-};
+export type BadgeCategory = 'sightseeing' | 'food' | 'adventure' | 'nightlife' | 'culture' | 'ongoing' | 'upcoming' | 'completed' | 'custom' | string;
 
-export default function Badge({
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: BadgeCategory;
+  tone?: BadgeCategory;
+  size?: 'sm' | 'md';
+}
+
+export const Badge: React.FC<BadgeProps> = ({
   children,
-  tone = 'neutral',
+  variant = 'custom',
+  tone,
+  size = 'md',
   className = '',
-}: {
-  children: React.ReactNode;
-  tone?: Tone;
-  className?: string;
-}) {
+  style,
+  ...props
+}) => {
+  const resolvedVariant = tone ?? variant;
+
+  const getBadgeColors = (): { bg: string; text: string; border: string } => {
+    switch (resolvedVariant.toLowerCase()) {
+      case 'sightseeing':
+        return { bg: '#E0F2FE', text: '#0369A1', border: '#BAE6FD' };
+      case 'food':
+        return { bg: '#FEF3C7', text: '#B45309', border: '#FDE68A' };
+      case 'adventure':
+        return { bg: '#DCFCE7', text: '#15803D', border: '#BBF7D0' };
+      case 'nightlife':
+        return { bg: '#F3E8FF', text: '#7E22CE', border: '#E9D5FF' };
+      case 'culture':
+        return { bg: '#FFE4E6', text: '#BE123C', border: '#FECDD3' };
+      case 'ongoing':
+        return { bg: '#E6F4F4', text: '#0F6E6E', border: '#B8E2E2' };
+      case 'upcoming':
+        return { bg: '#FFF7ED', text: '#C2410C', border: '#FFEDD5' };
+      case 'completed':
+        return { bg: '#F3F4F6', text: '#4B5563', border: '#E5E7EB' };
+      default:
+        return { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
+    }
+  };
+
+  const colors = getBadgeColors();
+
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: size === 'sm' ? '2px 8px' : '4px 12px',
+        fontSize: size === 'sm' ? '11px' : '12px',
+        fontWeight: 600,
+        borderRadius: '9999px',
+        backgroundColor: colors.bg,
+        color: colors.text,
+        border: `1px solid ${colors.border}`,
+        textTransform: 'capitalize',
+        letterSpacing: '0.02em',
+        lineHeight: 1.4,
+        ...style,
+      }}
+      className={`gt-badge ${className}`}
+      {...props}
     >
-      {children}
+      {children || resolvedVariant}
     </span>
   );
-}
+};
+
+export default Badge;

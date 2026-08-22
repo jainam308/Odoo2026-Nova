@@ -1,19 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
 
 :root {
   /* Brand */
   --color-primary: #0F6E6E;
   --color-primary-dark: #0A4F4F;
+  --color-primary-light: #E6F4F4;
   --color-accent: #FF7A59;
   --color-accent-dark: #E85F3D;
+  --color-accent-light: #FFF1EE;
 
   /* Neutrals */
   --color-bg: #F9FAFB;
   --color-surface: #FFFFFF;
   --color-border: #E5E7EB;
+  --color-border-hover: #D1D5DB;
   --color-text: #1F2937;
   --color-text-muted: #6B7280;
+  --color-text-light: #9CA3AF;
 
   /* Status */
   --color-success: #22A06B;
@@ -24,45 +28,26 @@
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.06);
-  --font-family: 'Inter', system-ui, sans-serif;
-}
-
-@theme {
-  /* Brand */
-  --color-primary: #0f6e6e;
-  --color-primary-dark: #0a4f4f;
-  --color-accent: #ff7a59;
-  --color-accent-dark: #e85f3d;
-
-  /* Neutrals */
-  --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-  --color-muted: #6b7280;
-
-  /* Status */
-  --color-success: #22a06b;
-  --color-warning: #f5a623;
-  --color-danger: #e5484d;
-
-  /* Shape */
-  --radius-lg: 20px;
-  --radius-md: 14px;
-  --radius-sm: 8px;
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  /* Font */
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --shadow-hover: 0 10px 25px -5px rgba(15, 110, 110, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-html,
-body {
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  background-color: #f9fafb;
-  color: #1f2937;
-  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 #root {
@@ -71,6 +56,27 @@ body {
   flex-direction: column;
 }
 
-main {
-  flex: 1;
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* Base custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

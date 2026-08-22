@@ -11,7 +11,6 @@ const app: Express = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
 app.use('/api/trips', tripsRouter);
 
 interface HealthResponse {
@@ -40,13 +39,9 @@ app.get('/api/health', async (_req: Request, res: Response<HealthResponse>) => {
   }
 });
 
-// Module C (Itinerary & Sharing) — single mount line.
 app.use('/api', stopsRouter);
-
-// Mount Central API Routes
 app.use('/api', routes);
 
-// Global Error Handler Middleware
 app.use(errorHandler);
 
 export default app;

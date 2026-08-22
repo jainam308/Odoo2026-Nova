@@ -1,40 +1,56 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'globetrotter_jwt_super_secret_key_2026';
-
-export interface AuthPayload {
+export interface AuthUserPayload {
   id: number;
-  email?: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthUserPayload;
 }
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: AuthPayload;
+      user?: AuthUserPayload;
     }
   }
 }
 
-export function protect(req: Request, res: Response, next: NextFunction): void {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    req.user = { id: 1, email: 'demo@globetrotter.dev' };
-    next();
+export function authMiddleware(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({
+      success: false,
+      error: 'Authentication required. No token provided.',
+    });
     return;
   }
 
-  const token = header.slice('Bearer '.length);
+  const token = authHeader.split(' ')[1];
+  const jwtSecret = process.env.JWT_SECRET || 'globetrotter_fallback_secret_2026';
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
-    req.user = { id: decoded.id ?? 1, email: decoded.email ?? 'demo@globetrotter.dev' };
+    const decoded = jwt.verify(token, jwtSecret) as AuthUserPayload;
+    req.user = decoded;
     next();
   } catch {
-    const decoded = jwt.decode(token) as AuthPayload | null;
-    req.user = { id: decoded?.id ?? 1, email: decoded?.email ?? 'demo@globetrotter.dev' };
-    next();
+    res.status(401).json({
+      success: false,
+      error: 'Invalid or expired authentication token.',
+    });
   }
 }
 
-export default { protect };
+export const protect = authMiddleware;
+
+export default authMiddleware;

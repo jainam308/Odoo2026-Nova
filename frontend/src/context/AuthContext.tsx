@@ -1,75 +1,100 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import authApi, { User, LoginPayload, SignupPayload, GoogleLoginPayload } from '../api/auth.api';
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-interface AuthContextValue {
-  user: AuthUser | null;
+interface AuthContextType {
+  user: User | null;
   token: string | null;
-  login: (token: string, user: AuthUser) => void;
+  isLoading: boolean;
+  login: (payload: LoginPayload) => Promise<void>;
+  signup: (payload: SignupPayload) => Promise<void>;
+  googleLogin: (payload: GoogleLoginPayload) => Promise<void>;
   logout: () => void;
+  updateProfile: (payload: Partial<User>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'gt_token';
-const USER_KEY = 'gt_user';
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-const DEMO_TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIsImVtYWlsIjoiZGVtb0BnbG9iZXRyb3R0ZXIuZGV2IiwiaWF0IjoxNzg3MzgxODAyfQ.AOC8y2nIPTarLM26hqdPk40-A1YwLk3NVAKjMGZJc_I';
-const DEMO_USER: AuthUser = {
-  id: 12,
-  email: 'demo@globetrotter.dev',
-  firstName: 'Demo',
-  lastName: 'Traveler',
-};
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem('token');
+      if (savedToken) {
+        try {
+          const currentUser = await authApi.getMe();
+          setUser(currentUser);
+        } catch (err) {
+          console.warn('Session expired or invalid token:', err);
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setIsLoading(false);
+    };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => {
-    localStorage.setItem(TOKEN_KEY, DEMO_TOKEN);
-    return DEMO_TOKEN;
-  });
+    initializeAuth();
+  }, []);
 
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    localStorage.setItem(USER_KEY, JSON.stringify(DEMO_USER));
-    return DEMO_USER;
-  });
+  const login = async (payload: LoginPayload) => {
+    const response = await authApi.login(payload);
+    localStorage.setItem('token', response.token);
+    setToken(response.token);
+    setUser(response.user);
+  };
 
-  const login = (newToken: string, newUser: AuthUser) => {
-    localStorage.setItem(TOKEN_KEY, newToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
+  const signup = async (payload: SignupPayload) => {
+    const response = await authApi.signup(payload);
+    localStorage.setItem('token', response.token);
+    setToken(response.token);
+    setUser(response.user);
+  };
+
+  const googleLogin = async (payload: GoogleLoginPayload) => {
+    const response = await authApi.googleLogin(payload);
+    localStorage.setItem('token', response.token);
+    setToken(response.token);
+    setUser(response.user);
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('token');
     setToken(null);
     setUser(null);
   };
 
+  const updateProfile = async (payload: Partial<User>) => {
+    const updated = await authApi.updateMe(payload);
+    setUser(updated);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        login,
+        signup,
+        googleLogin,
+        logout,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return ctx;
-}
+  return context;
+};
+
+export default AuthContext;

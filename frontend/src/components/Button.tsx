@@ -1,32 +1,129 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import React from 'react';
 
-type Variant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger';
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  children: ReactNode;
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  fullWidth?: boolean;
+  isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
-const base =
-  'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed';
-
-const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-white shadow-md hover:bg-primary-dark active:scale-[0.98]',
-  secondary: 'border border-border bg-surface text-primary hover:bg-primary/5 active:scale-[0.98]',
-  accent: 'bg-accent text-white shadow-md hover:bg-accent-dark active:scale-[0.98]',
-  ghost: 'text-primary hover:bg-primary/10 active:scale-[0.98]',
-  danger: 'bg-danger text-white shadow-md hover:bg-danger/90 active:scale-[0.98]',
-};
-
-export default function Button({
-  variant = 'primary',
-  className = '',
+export const Button: React.FC<ButtonProps> = ({
   children,
-  ...rest
-}: ButtonProps) {
+  variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  isLoading = false,
+  leftIcon,
+  rightIcon,
+  className = '',
+  disabled,
+  style,
+  ...props
+}) => {
+  const getVariantStyles = (): React.CSSProperties => {
+    switch (variant) {
+      case 'primary':
+        return {
+          backgroundColor: 'var(--color-primary)',
+          color: '#ffffff',
+          border: '1px solid var(--color-primary)',
+        };
+      case 'accent':
+        return {
+          backgroundColor: 'var(--color-accent)',
+          color: '#ffffff',
+          border: '1px solid var(--color-accent)',
+        };
+      case 'secondary':
+        return {
+          backgroundColor: '#ffffff',
+          color: 'var(--color-primary)',
+          border: '1.5px solid var(--color-primary)',
+        };
+      case 'ghost':
+        return {
+          backgroundColor: 'transparent',
+          color: 'var(--color-text)',
+          border: '1px solid transparent',
+        };
+      case 'danger':
+        return {
+          backgroundColor: 'var(--color-danger)',
+          color: '#ffffff',
+          border: '1px solid var(--color-danger)',
+        };
+      default:
+        return {};
+    }
+  };
+
+  const getSizeStyles = (): React.CSSProperties => {
+    switch (size) {
+      case 'sm':
+        return {
+          padding: '6px 14px',
+          fontSize: '13px',
+          borderRadius: 'var(--radius-sm)',
+        };
+      case 'lg':
+        return {
+          padding: '14px 28px',
+          fontSize: '16px',
+          borderRadius: 'var(--radius-md)',
+        };
+      case 'md':
+      default:
+        return {
+          padding: '10px 20px',
+          fontSize: '14px',
+          borderRadius: 'var(--radius-md)',
+        };
+    }
+  };
+
+  const baseStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    fontWeight: 600,
+    cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
+    opacity: disabled || isLoading ? 0.65 : 1,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    width: fullWidth ? '100%' : 'auto',
+    outline: 'none',
+    boxShadow: variant === 'accent' ? '0 4px 12px rgba(255, 122, 89, 0.25)' : 'none',
+    ...getVariantStyles(),
+    ...getSizeStyles(),
+    ...style,
+  };
+
   return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...rest}>
-      {children}
+    <button
+      disabled={disabled || isLoading}
+      style={baseStyle}
+      className={`gt-button ${className}`}
+      {...props}
+    >
+      {isLoading ? (
+        <span style={{
+          width: '16px',
+          height: '16px',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          borderTopColor: '#ffffff',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+          display: 'inline-block'
+        }} />
+      ) : (
+        leftIcon
+      )}
+      <span>{children}</span>
+      {!isLoading && rightIcon}
     </button>
   );
-}
+};
+
+export default Button;

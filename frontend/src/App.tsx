@@ -68,7 +68,6 @@ function App() {
               }
             />
 
-            {/* Module C - Itinerary & Sharing Views */}
             <Route path="/itinerary/*" element={<ItineraryRoutes />} />
 
             {/* Fallbacks for navigation links */}
