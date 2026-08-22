@@ -3,14 +3,17 @@ import React from 'react';
 export interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
+  label?: string;
   fullPage?: boolean;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   text = 'Loading...',
+  label,
   fullPage = false,
 }) => {
+  const message = label ?? text;
   const getSpinnerDimensions = () => {
     switch (size) {
       case 'sm':
@@ -37,9 +40,9 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           animation: 'gtSpin 0.75s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite',
         }}
       />
-      {text && (
+      {message && (
         <span style={{ fontSize: '14px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-          {text}
+          {message}
         </span>
       )}
       <style>{`

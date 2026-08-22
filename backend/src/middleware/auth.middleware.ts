@@ -12,6 +12,15 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthUserPayload;
 }
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      user?: AuthUserPayload;
+    }
+  }
+}
+
 export function authMiddleware(
   req: AuthenticatedRequest,
   res: Response,
@@ -34,12 +43,14 @@ export function authMiddleware(
     const decoded = jwt.verify(token, jwtSecret) as AuthUserPayload;
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     res.status(401).json({
       success: false,
       error: 'Invalid or expired authentication token.',
     });
   }
 }
+
+export const protect = authMiddleware;
 
 export default authMiddleware;

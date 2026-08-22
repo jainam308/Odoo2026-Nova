@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { fetchTrips } from '../../api/trips.api';
 import { Trip } from '../../types/trip';
+import { safeImageUrl } from '../../utils/safeUrl';
 
 const FEATURED_DESTINATIONS = [
   {
@@ -201,7 +202,7 @@ export const Dashboard: React.FC = () => {
                 >
                   <div className="relative h-40 bg-gray-100 overflow-hidden">
                     <img
-                      src={trip.cover_photo_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'}
+                      src={safeImageUrl(trip.cover_photo_url, 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80')}
                       alt={trip.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

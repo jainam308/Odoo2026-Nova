@@ -1,5 +1,4 @@
 -- GlobeTrotter Database Schema
-
 -- ============ MODULE A owns these ============
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,

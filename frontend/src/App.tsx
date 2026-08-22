@@ -13,6 +13,7 @@ import { ItineraryView } from './pages/trips/ItineraryView';
 import { ItineraryBuilder } from './pages/trips/ItineraryBuilder';
 import { PublicTripView } from './pages/trips/PublicTripView';
 import { ExploreDestinations } from './pages/trips/ExploreDestinations';
+import ItineraryRoutes from './pages/itinerary/ItineraryRoutes';
 import './App.css';
 
 const NavigationWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -66,6 +67,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/itinerary/*" element={<ItineraryRoutes />} />
 
             {/* Fallbacks for navigation links */}
             <Route path="/calendar" element={<Navigate to="/profile" replace />} />

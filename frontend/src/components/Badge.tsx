@@ -4,19 +4,23 @@ export type BadgeCategory = 'sightseeing' | 'food' | 'adventure' | 'nightlife' |
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeCategory;
+  tone?: BadgeCategory;
   size?: 'sm' | 'md';
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = 'custom',
+  tone,
   size = 'md',
   className = '',
   style,
   ...props
 }) => {
+  const resolvedVariant = tone ?? variant;
+
   const getBadgeColors = (): { bg: string; text: string; border: string } => {
-    switch (variant.toLowerCase()) {
+    switch (resolvedVariant.toLowerCase()) {
       case 'sightseeing':
         return { bg: '#E0F2FE', text: '#0369A1', border: '#BAE6FD' };
       case 'food':
@@ -61,7 +65,7 @@ export const Badge: React.FC<BadgeProps> = ({
       className={`gt-badge ${className}`}
       {...props}
     >
-      {children || variant}
+      {children || resolvedVariant}
     </span>
   );
 };
