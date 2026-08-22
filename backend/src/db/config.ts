@@ -13,13 +13,12 @@ if (!DATABASE_URL) {
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
+const useSSL = isProduction || (DATABASE_URL ? DATABASE_URL.includes('neon.tech') || DATABASE_URL.includes('sslmode=require') : true);
 
 export const dbConfig: PoolConfig = {
   connectionString: DATABASE_URL,
-  ssl: isProduction
-    ? { rejectUnauthorized: true }
-    : false,
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+  connectionTimeoutMillis: 10_000,
 };
