@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Compass, PlusCircle, MapPin, ListOrdered, Calendar, User, LogIn, Shield, Sparkles } from 'lucide-react';
+import { Compass, PlusCircle, MapPin, ListOrdered, Calendar, User, LogIn, Shield, Sparkles, MessageSquare } from 'lucide-react';
 
 // Module A pages
 import LoginPage from './pages/auth/LoginPage';
@@ -28,6 +28,9 @@ import GlobalCalendarPage from './pages/itinerary/GlobalCalendarPage';
 
 // AI Module page
 import AIChatPage from './pages/ai-chat/AIChatPage';
+
+// Community Module page
+import CommunityPage from './pages/community/CommunityPage';
 
 // ──────────────────────────────────────────────
 // Shared Navigation Bar (combines all modules)
@@ -101,6 +104,18 @@ function NavigationBar() {
           >
             <Calendar className="h-4 w-4 text-[#0F6E6E]" />
             <span>Calendar</span>
+          </Link>
+
+          <Link
+            to="/community"
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${
+              isCurrent('/community')
+                ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <MessageSquare className="h-4 w-4 text-[#0F6E6E]" />
+            <span>Community</span>
           </Link>
 
           <Link
@@ -236,7 +251,7 @@ function App() {
               <Route path="/calendar" element={<GlobalCalendarPage />} />
 
               {/* Fallback routes */}
-              <Route path="/community" element={<Navigate to="/" replace />} />
+              <Route path="/community" element={<CommunityPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

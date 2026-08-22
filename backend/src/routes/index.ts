@@ -5,6 +5,7 @@ import citiesRoutes from '../modules/discovery/cities.routes';
 import activitiesRoutes from '../modules/discovery/activities.routes';
 import tripsRouter from './trips.routes';
 import aiRoutes from './ai.routes';
+import communityRoutes from './community.routes';
 
 const router = Router();
 
@@ -19,5 +20,8 @@ router.use('/trips', tripsRouter);
 
 // AI Module – Trip Planning Assistant
 router.use('/ai', aiRoutes);
+
+// Community Module – Share Travel Experiences
+router.use('/community', communityRoutes);
 
 export default router;

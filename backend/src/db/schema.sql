@@ -78,3 +78,34 @@ CREATE TABLE IF NOT EXISTS stop_activities (
   order_index INTEGER DEFAULT 0,
   notes TEXT
 );
+
+-- ============ COMMUNITY MODULE ============
+CREATE TABLE IF NOT EXISTS community_posts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  trip_id INTEGER REFERENCES trips(id) ON DELETE SET NULL,
+  title VARCHAR(300) NOT NULL,
+  content TEXT NOT NULL,
+  category VARCHAR(50) DEFAULT 'general',  -- general | trip-review | food | adventure | culture | tips
+  image_url TEXT,
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES community_posts(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES community_posts(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
