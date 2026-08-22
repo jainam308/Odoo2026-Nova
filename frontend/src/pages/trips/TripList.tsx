@@ -52,12 +52,24 @@ export const TripList: React.FC = () => {
     }
   };
 
+  /**
+   * Parse a YYYY-MM-DD date string as LOCAL noon to avoid UTC-offset issues.
+   * e.g. "2026-09-10" → 2026-09-10T12:00:00 in the device's local timezone,
+   * so the same calendar date is always classified correctly regardless of timezone.
+   */
+  const parseLocalDate = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0); // noon local time
+  };
+
   const getTripStatus = (trip: Trip): 'ongoing' | 'upcoming' | 'completed' => {
-    if (trip.status) return trip.status;
     const now = new Date();
-    const start = new Date(trip.start_date);
-    const end = new Date(trip.end_date);
-    if (now >= start && now <= end) return 'ongoing';
+    const start = parseLocalDate(trip.start_date);
+    // End of day: set to 23:59:59 so an ongoing trip is still "ongoing" all day on end_date
+    const endDay = parseLocalDate(trip.end_date);
+    endDay.setHours(23, 59, 59, 999);
+
+    if (now >= start && now <= endDay) return 'ongoing';
     if (now < start) return 'upcoming';
     return 'completed';
   };
@@ -71,6 +83,14 @@ export const TripList: React.FC = () => {
       (trip.stops && trip.stops.some(s => s.city_name.toLowerCase().includes(searchQuery.toLowerCase())));
     return matchesFilter && matchesSearch;
   });
+
+  // Count per tab for badges
+  const tabCounts = {
+    all: trips.length,
+    upcoming: trips.filter(t => getTripStatus(t) === 'upcoming').length,
+    ongoing: trips.filter(t => getTripStatus(t) === 'ongoing').length,
+    completed: trips.filter(t => getTripStatus(t) === 'completed').length,
+  };
 
   const getStatusBadge = (status: 'ongoing' | 'upcoming' | 'completed') => {
     switch (status) {
@@ -97,6 +117,7 @@ export const TripList: React.FC = () => {
         );
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] py-8 px-4 sm:px-6 lg:px-8">
@@ -141,13 +162,20 @@ export const TripList: React.FC = () => {
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all whitespace-nowrap ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all whitespace-nowrap ${
                   filter === tab
                     ? 'bg-[#0F6E6E] text-white shadow-sm'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {tab === 'all' ? 'All Trips' : tab}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                  filter === tab
+                    ? 'bg-white/20 text-white'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {tabCounts[tab]}
+                </span>
               </button>
             ))}
           </div>

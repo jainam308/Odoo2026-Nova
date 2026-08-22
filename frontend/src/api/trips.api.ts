@@ -16,7 +16,6 @@ let localTrips: Trip[] = [
     cover_photo_url: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80',
     is_public: true,
     share_slug: 'summer-in-goa-2026',
-    status: 'upcoming',
     estimated_cost: 32500,
     stops: [
       {
@@ -114,7 +113,6 @@ let localTrips: Trip[] = [
     cover_photo_url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80',
     is_public: true,
     share_slug: 'himalayan-trekking-2026',
-    status: 'upcoming',
     estimated_cost: 28000,
     stops: [
       {
@@ -152,7 +150,6 @@ let localTrips: Trip[] = [
     cover_photo_url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&q=80',
     is_public: true,
     share_slug: 'tokyo-kyoto-cultural-odyssey',
-    status: 'completed',
     estimated_cost: 145000,
     stops: [
       {
