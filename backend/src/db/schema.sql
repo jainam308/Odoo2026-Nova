@@ -1,4 +1,5 @@
 -- GlobeTrotter Database Schema
+
 -- ============ MODULE A owns these ============
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -13,6 +14,13 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Ensure all columns exist on pre-existing users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
 
 CREATE TABLE IF NOT EXISTS cities (
   id SERIAL PRIMARY KEY,
