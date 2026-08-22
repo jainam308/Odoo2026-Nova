@@ -3,20 +3,10 @@ import db from '../db';
 
 export async function adminMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    let userId = (req as any).user?.id;
+    const userId = (req as any).user?.id;
 
     if (!userId) {
-      const adminUser = await db.query<{ id: number; is_admin: boolean }>(
-        'SELECT id, is_admin FROM users WHERE is_admin = true LIMIT 1'
-      );
-      if (adminUser.rows.length > 0) {
-        userId = adminUser.rows[0].id;
-        (req as any).user = { id: userId, is_admin: true };
-      }
-    }
-
-    if (!userId) {
-      res.status(401).json({ success: false, error: 'Unauthorized: Admin user not found' });
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required' });
       return;
     }
 
