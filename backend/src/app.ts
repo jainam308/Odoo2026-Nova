@@ -37,11 +37,16 @@ app.get('/api/health', async (_req: Request, res: Response<HealthResponse>) => {
   }
 });
 
+import adminRouter from './routes/admin.routes';
+
 // Mount Central API Routes (Module A + Module B)
 app.use('/api', routes);
 
 // Mount Module C Itinerary & Stops Routes
 app.use('/api', stopsRouter);
+
+// Mount Admin Panel Routes
+app.use('/api/admin', adminRouter);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

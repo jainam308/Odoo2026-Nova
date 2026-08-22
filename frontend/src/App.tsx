@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Compass, PlusCircle, MapPin, ListOrdered, Calendar, User, LogIn } from 'lucide-react';
+import { Compass, PlusCircle, MapPin, ListOrdered, Calendar, User, LogIn, Shield } from 'lucide-react';
 
 // Module A pages
 import LoginPage from './pages/auth/LoginPage';
@@ -18,6 +18,8 @@ import { ItineraryBuilder } from './pages/trips/ItineraryBuilder';
 import { Dashboard } from './pages/trips/Dashboard';
 import { PublicTripView } from './pages/trips/PublicTripView';
 import { ExploreDestinations } from './pages/trips/ExploreDestinations';
+
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 // Module C routes & pages
 import ItineraryRoutes from './pages/itinerary/ItineraryRoutes';
@@ -83,6 +85,30 @@ function NavigationBar() {
           >
             <Calendar className="h-4 w-4 text-[#0F6E6E]" />
             <span>Calendar</span>
+          </Link>
+
+          <Link
+            to="/itinerary"
+            className={`text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+              isCurrent('/itinerary')
+                ? 'bg-[#0F6E6E]/10 text-[#0F6E6E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Compass className="h-4 w-4 text-[#0F6E6E]" />
+            Itinerary Builder
+          </Link>
+
+          <Link
+            to="/admin"
+            className={`text-sm font-bold flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+              isCurrent('/admin')
+                ? 'bg-purple-700 text-white shadow-sm'
+                : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+            }`}
+          >
+            <Shield className="h-4 w-4" />
+            Admin Panel
           </Link>
 
           {user ? (
@@ -182,6 +208,9 @@ function App() {
               <Route path="/trips/:id" element={<ItineraryView />} />
               <Route path="/explore" element={<ExploreDestinations />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+
+              {/* ── Admin Panel Module ── */}
+              <Route path="/admin" element={<AdminDashboard />} />
 
               {/* ── Module C – Stops & Calendar Timeline ── */}
               <Route path="/itinerary/*" element={<ItineraryRoutes />} />
