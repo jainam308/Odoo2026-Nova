@@ -30,9 +30,9 @@ The system is divided into three distinct modules developed in parallel, plus an
                     │
        ┌────────────┼────────────┐
        ▼            ▼            ▼
- Module A      Module B      Module C
- (Auth &      (Trips &      (Itinerary &
- Discovery)     Account)       Sharing)
+    Module A      Module B      Module C
+    (Auth &      (Trips &      (Itinerary &
+    Discovery)     Account)       Sharing)
        │            │            │
        └────────────┼────────────┘
                     ▼
