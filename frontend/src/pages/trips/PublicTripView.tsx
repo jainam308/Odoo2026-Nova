@@ -6,7 +6,7 @@ import {
   Compass,
   Globe
 } from 'lucide-react';
-import { fetchTrips, createTrip } from '../../api/trips.api';
+import { getTripBySlug, fetchTrips, createTrip } from '../../api/trips.api';
 import { Trip } from '../../types/trip';
 
 export const PublicTripView: React.FC = () => {
@@ -19,21 +19,30 @@ export const PublicTripView: React.FC = () => {
   const [cloning, setCloning] = useState<boolean>(false);
 
   useEffect(() => {
+    let ignore = false;
     const loadPublicTrip = async () => {
+      if (!slug) return;
       setLoading(true);
       try {
-        const trips = await fetchTrips();
-        const found = trips.find(
-          (t) => t.share_slug === slug || String(t.id) === slug
-        ) || trips[0];
-        setTrip(found || null);
+        const found = await getTripBySlug(slug);
+        if (!ignore) {
+          if (found) {
+            setTrip(found);
+          } else {
+            const all = await fetchTrips();
+            setTrip(all[0] || null);
+          }
+        }
       } catch (err) {
         console.error('Failed to load shared trip:', err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
     loadPublicTrip();
+    return () => {
+      ignore = true;
+    };
   }, [slug]);
 
   const handleCopyLink = () => {
