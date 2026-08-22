@@ -10,73 +10,48 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { fetchTrips } from '../../api/trips.api';
+import { discoveryApi, City } from '../../api/discovery.api';
 import { Trip } from '../../types/trip';
 import { safeImageUrl } from '../../utils/safeUrl';
-
-const FEATURED_DESTINATIONS = [
-  {
-    id: 1,
-    name: 'Goa',
-    country: 'India',
-    region: 'South Asia',
-    costIndex: 'Moderate',
-    tag: 'Beach & Culture',
-    image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80',
-    activityCount: 24
-  },
-  {
-    id: 2,
-    name: 'Kyoto',
-    country: 'Japan',
-    region: 'East Asia',
-    costIndex: 'High',
-    tag: 'Temples & History',
-    image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&q=80',
-    activityCount: 38
-  },
-  {
-    id: 3,
-    name: 'Manali',
-    country: 'India',
-    region: 'Himalayas',
-    costIndex: 'Budget',
-    tag: 'Mountains & Trekking',
-    image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80',
-    activityCount: 19
-  },
-  {
-    id: 4,
-    name: 'Paris',
-    country: 'France',
-    region: 'Europe',
-    costIndex: 'High',
-    tag: 'Art & Gastronomy',
-    image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80',
-    activityCount: 52
-  }
-];
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [destinations, setDestinations] = useState<City[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let ignore = false;
     const load = async () => {
       try {
-        const data = await fetchTrips();
-        setTrips(data);
+        const [tripsData, citiesData] = await Promise.all([
+          fetchTrips(),
+          discoveryApi.getCities(),
+        ]);
+        if (!ignore) {
+          setTrips(tripsData);
+          setDestinations(citiesData);
+        }
       } catch (err) {
-        console.error('Failed to load trips:', err);
+        console.error('Failed to load dashboard data:', err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
     load();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const totalStops = trips.reduce((acc, t) => acc + (t.stops?.length || 0), 0);
   const totalCost = trips.reduce((acc, t) => acc + (t.estimated_cost || 0), 0);
+
+  const getCostLabel = (costIndex?: number) => {
+    if (!costIndex || costIndex <= 2) return 'Budget';
+    if (costIndex <= 4) return 'Moderate';
+    return 'Luxury';
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-16">
@@ -210,7 +185,7 @@ export const Dashboard: React.FC = () => {
                     <div className="absolute bottom-3 left-3 text-white">
                       <h3 className="font-bold text-base leading-tight drop-shadow-sm">{trip.name}</h3>
                       <span className="text-[11px] text-gray-200 flex items-center gap-1 mt-0.5">
-                        <Calendar size={11} /> {new Date(trip.start_date).toLocaleDateString()}
+                        <Calendar size={11} /> {trip.start_date || 'Upcoming'}
                       </span>
                     </div>
                   </div>
@@ -251,20 +226,20 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURED_DESTINATIONS.map((dest) => (
+            {destinations.slice(0, 4).map((dest) => (
               <div
                 key={dest.id}
                 onClick={() => navigate('/explore')}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer group flex flex-col"
               >
-                <div className="relative h-44 overflow-hidden">
+                <div className="relative h-44 overflow-hidden bg-gray-100">
                   <img
-                    src={dest.image}
+                    src={safeImageUrl(dest.image_url, 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80')}
                     alt={dest.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                    {dest.tag}
+                    {dest.country}
                   </div>
                   <div className="absolute bottom-3 left-3 text-white">
                     <h3 className="font-bold text-lg drop-shadow-sm leading-tight">{dest.name}</h3>
@@ -273,9 +248,9 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="p-4 flex items-center justify-between text-xs text-gray-500">
-                  <span>{dest.activityCount} Activities</span>
+                  <span>Popularity: {dest.popularity || 90}%</span>
                   <span className="px-2 py-0.5 bg-gray-100 rounded-md font-medium text-gray-700">
-                    {dest.costIndex} Cost
+                    {getCostLabel(dest.cost_index)} Cost
                   </span>
                 </div>
               </div>

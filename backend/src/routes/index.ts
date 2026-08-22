@@ -3,13 +3,17 @@ import authRoutes from '../modules/auth/auth.routes';
 import usersRoutes from '../modules/users/users.routes';
 import citiesRoutes from '../modules/discovery/cities.routes';
 import activitiesRoutes from '../modules/discovery/activities.routes';
+import tripsRouter from './trips.routes';
 
 const router = Router();
 
-// Module A routes
+// Module A – Authentication & Discovery
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/cities', citiesRoutes);
 router.use('/activities', activitiesRoutes);
+
+// Module B – Trip Itinerary Builder
+router.use('/trips', tripsRouter);
 
 export default router;

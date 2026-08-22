@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Globe, User, LogOut, Compass, MapPin, Calendar, Users, LogIn } from 'lucide-react';
 import Button from './Button';
+import { safeImageUrl } from '../utils/safeUrl';
 
 export interface NavbarUser {
   id?: number;
@@ -150,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               >
                 {user.photo_url ? (
                   <img
-                    src={user.photo_url}
+                    src={safeImageUrl(user.photo_url)}
                     alt="avatar"
                     style={{
                       width: '40px',

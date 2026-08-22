@@ -2,17 +2,15 @@ import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import db from './db';
 import routes from './routes';
-import errorHandler from './middleware/errorHandler';
-import tripsRouter from './routes/trips.routes';
 import stopsRouter from './routes/stops.routes';
+import errorHandler from './middleware/errorHandler';
 
 const app: Express = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/trips', tripsRouter);
-
+// Health check endpoint
 interface HealthResponse {
   success: boolean;
   status: 'healthy' | 'unhealthy';
@@ -39,9 +37,13 @@ app.get('/api/health', async (_req: Request, res: Response<HealthResponse>) => {
   }
 });
 
-app.use('/api', stopsRouter);
+// Mount Central API Routes (Module A + Module B)
 app.use('/api', routes);
 
+// Mount Module C Itinerary & Stops Routes
+app.use('/api', stopsRouter);
+
+// Global Error Handler Middleware
 app.use(errorHandler);
 
 export default app;
