@@ -4,11 +4,13 @@ import {
   Copy,
   Share2,
   Compass,
-  Globe
+  Globe,
+  Mail,
 } from 'lucide-react';
 import { getTripBySlug, fetchTrips, createTrip } from '../../api/trips.api';
 import { Trip } from '../../types/trip';
 import { safeImageUrl } from '../../utils/safeUrl';
+import { EmailDeparturePackModal } from '../../components';
 
 export const PublicTripView: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -18,6 +20,7 @@ export const PublicTripView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
   const [cloning, setCloning] = useState<boolean>(false);
+  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
 
   useEffect(() => {
     let ignore = false;
@@ -117,7 +120,16 @@ export const PublicTripView: React.FC = () => {
             GlobeTrotter Home
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white/30 text-sm font-medium transition-all"
+              title="Email complete day-by-day itinerary & 1-click calendar sync"
+            >
+              <Mail size={16} />
+              <span>Email Departure Pack</span>
+            </button>
+
             <button
               onClick={handleCopyLink}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white/30 text-sm font-medium transition-all"
@@ -239,6 +251,16 @@ export const PublicTripView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Email Departure Pack Modal */}
+      {trip && (
+        <EmailDeparturePackModal
+          isOpen={showEmailModal}
+          onClose={() => setShowEmailModal(false)}
+          tripId={trip.id}
+          tripName={trip.name}
+        />
+      )}
     </div>
   );
 };

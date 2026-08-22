@@ -6,6 +6,7 @@ import activitiesRoutes from '../modules/discovery/activities.routes';
 import tripsRouter from './trips.routes';
 import aiRoutes from './ai.routes';
 import communityRoutes from './community.routes';
+import emailRoutes from './email.routes';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.use('/ai', aiRoutes);
 
 // Community Module – Share Travel Experiences
 router.use('/community', communityRoutes);
+
+// Email & Calendar Sync Service
+router.use('/email', emailRoutes);
 
 export default router;

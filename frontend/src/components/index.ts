@@ -7,3 +7,4 @@ export * from './LoadingSpinner';
 export * from './EmptyState';
 export * from './SearchListLayout';
 export * from './GoogleLoginButton';
+export * from './EmailDeparturePackModal';

@@ -10,11 +10,13 @@ import {
   Trash2,
   ArrowLeft,
   Sparkles,
-  Star
+  Star,
+  Mail,
 } from 'lucide-react';
 import { getTripById, fetchTripBudget, removeActivityFromStop } from '../../api/trips.api';
 import { Trip, TripBudgetSummary } from '../../types/trip';
 import { safeImageUrl } from '../../utils/safeUrl';
+import { EmailDeparturePackModal } from '../../components';
 
 export const ItineraryView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,7 @@ export const ItineraryView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'timeline' | 'budget'>('timeline');
   const [copied, setCopied] = useState<boolean>(false);
+  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
 
   const loadTripData = async () => {
     if (!id) return;
@@ -126,7 +129,16 @@ export const ItineraryView: React.FC = () => {
             All Trips
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white/30 text-sm font-medium transition-all"
+              title="Email complete day-by-day itinerary & 1-click calendar sync"
+            >
+              <Mail size={16} />
+              <span>Email Departure Pack</span>
+            </button>
+
             <button
               onClick={handleShare}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white/30 text-sm font-medium transition-all"
@@ -418,6 +430,16 @@ export const ItineraryView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Email Departure Pack Modal */}
+      {trip && (
+        <EmailDeparturePackModal
+          isOpen={showEmailModal}
+          onClose={() => setShowEmailModal(false)}
+          tripId={trip.id}
+          tripName={trip.name}
+        />
+      )}
     </div>
   );
 };

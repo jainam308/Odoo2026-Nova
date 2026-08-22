@@ -189,6 +189,45 @@ async function runTests() {
     const aiData = (await aiRes.json()) as ApiResponse<{ days: any[]; total_estimated_cost: number }>;
     assert(aiRes.status === 200 && Boolean(aiData.data && Array.isArray(aiData.data.days) && aiData.data.days.length > 0 && typeof aiData.data.total_estimated_cost === 'number'), 'POST /api/ai/plan returns structured day-by-day itinerary');
 
+    // 16. Create a test trip and dispatch Departure Pack Email
+    const testTripRes = await fetch(`${BASE_URL}/trips`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        name: 'Departure Pack Test Journey',
+        description: 'Testing email itinerary and calendar sync',
+        start_date: '2026-10-01',
+        end_date: '2026-10-08',
+        is_public: true
+      })
+    });
+    const testTripData = (await testTripRes.json()) as any;
+    const testTripId = testTripData?.trip?.id || 1;
+
+    const emailRes = await fetch(`${BASE_URL}/email/send-itinerary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        tripId: testTripId,
+        emails: ['traveler.companion@example.com'],
+        customNote: 'Excited for our upcoming trip!',
+        attachIcs: true
+      })
+    });
+    const emailData = (await emailRes.json()) as ApiResponse<any>;
+    assert(emailRes.status === 200 && emailData.success === true, 'POST /api/email/send-itinerary dispatches Departure Pack with .ics calendar sync');
+
+    // 17. GET /api/email/trips/:id/calendar.ics (Direct .ics Calendar Export)
+    const icsRes = await fetch(`${BASE_URL}/email/trips/${testTripId}/calendar.ics`);
+    const icsContent = await icsRes.text();
+    assert(icsRes.status === 200 && icsContent.includes('BEGIN:VCALENDAR') && icsContent.includes('END:VCALENDAR'), 'GET /api/email/trips/:id/calendar.ics returns valid RFC 5545 iCalendar stream');
+
     console.log(`\n🏁 Complete Test Suite Run Summary: ${passed} passed, ${failed} failed.`);
   } catch (err) {
     console.error('💥 Test run encountered error:', err);
