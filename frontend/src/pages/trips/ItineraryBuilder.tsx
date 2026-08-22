@@ -10,12 +10,16 @@ import {
   Compass,
   Sparkles,
   Eye,
-  AlertCircle
+  AlertCircle,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
 } from 'lucide-react';
 import {
   getTripById,
   addStopToTrip,
   deleteStopFromTrip,
+  reorderTripStops,
   addActivityToStop,
   removeActivityFromStop
 } from '../../api/trips.api';
@@ -211,6 +215,47 @@ export const ItineraryBuilder: React.FC = () => {
   };
 
 
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleMoveStop = async (index: number, direction: 'up' | 'down') => {
+    if (!trip || !trip.stops) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= trip.stops.length) return;
+
+    const newStops = [...trip.stops];
+    const [moved] = newStops.splice(index, 1);
+    newStops.splice(targetIndex, 0, moved);
+
+    setTrip({ ...trip, stops: newStops });
+    const stopIds = newStops.map((s) => s.id);
+    await reorderTripStops(trip.id, stopIds);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex || !trip || !trip.stops) return;
+
+    const newStops = [...trip.stops];
+    const [moved] = newStops.splice(draggedIndex, 1);
+    newStops.splice(targetIndex, 0, moved);
+
+    setTrip({ ...trip, stops: newStops });
+    setDraggedIndex(null);
+
+    const stopIds = newStops.map((s) => s.id);
+    await reorderTripStops(trip.id, stopIds);
+  };
+
   const handleRemoveActivity = async (stopId: number, activityId: number) => {
     if (!trip) return;
     await removeActivityFromStop(trip.id, stopId, activityId);
@@ -292,10 +337,13 @@ export const ItineraryBuilder: React.FC = () => {
         {/* Left Column: Stops Timeline & Manager */}
         <div className="lg:col-span-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <MapPin size={18} className="text-[#FF7A59]" />
-              City Stops ({trip.stops?.length || 0})
-            </h2>
+            <div>
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <MapPin size={18} className="text-[#FF7A59]" />
+                City Stops ({trip.stops?.length || 0})
+              </h2>
+              <p className="text-[11px] text-gray-400 mt-0.5">Drag or use arrows to reorder</p>
+            </div>
             <button
               onClick={() => setShowAddStopModal(true)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FF7A59] hover:bg-[#e66948] text-white text-xs font-medium shadow-sm transition-colors"
@@ -304,40 +352,87 @@ export const ItineraryBuilder: React.FC = () => {
             </button>
           </div>
 
-          {/* Stops List */}
+          {/* Stops List with Drag & Drop & Reorder Arrows */}
           <div className="space-y-3">
             {trip.stops && trip.stops.length > 0 ? (
               trip.stops.map((stop, index) => {
                 const isSelected = selectedStop?.id === stop.id;
+                const isDragging = draggedIndex === index;
                 return (
                   <div
                     key={stop.id}
+                    draggable={true}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
                     onClick={() => setSelectedStopId(stop.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer select-none ${
+                      isDragging
+                        ? 'opacity-40 border-dashed border-[#0F6E6E] bg-gray-50'
+                        : isSelected
                         ? 'bg-[#0F6E6E]/5 border-[#0F6E6E] shadow-sm ring-1 ring-[#0F6E6E]'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-xs'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[11px] font-bold text-[#0F6E6E] uppercase tracking-wider">
-                          Stop {index + 1}
-                        </span>
-                        <h3 className="font-bold text-base text-gray-900">{stop.city_name}</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">{stop.country}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5">
+                        <div
+                          className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing pt-0.5"
+                          title="Drag to reorder stop"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <GripVertical size={16} />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-[#0F6E6E] uppercase tracking-wider">
+                            Stop {index + 1}
+                          </span>
+                          <h3 className="font-bold text-base text-gray-900 leading-tight">{stop.city_name}</h3>
+                          <p className="text-xs text-gray-500 mt-0.5">{stop.country}</p>
+                        </div>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteStop(stop.id);
-                        }}
-                        className="text-gray-400 hover:text-red-500 p-1 transition-colors"
-                        title="Delete stop"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {/* Move Up */}
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => handleMoveStop(index, 'up')}
+                          className={`p-1 rounded-md transition-colors ${
+                            index === 0
+                              ? 'text-gray-200 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-[#0F6E6E] hover:bg-gray-100'
+                          }`}
+                          title="Move stop up"
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+
+                        {/* Move Down */}
+                        <button
+                          type="button"
+                          disabled={index === (trip.stops?.length || 0) - 1}
+                          onClick={() => handleMoveStop(index, 'down')}
+                          className={`p-1 rounded-md transition-colors ${
+                            index === (trip.stops?.length || 0) - 1
+                              ? 'text-gray-200 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-[#0F6E6E] hover:bg-gray-100'
+                          }`}
+                          title="Move stop down"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStop(stop.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors ml-1"
+                          title="Delete stop"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">

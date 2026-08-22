@@ -51,6 +51,27 @@ export function authMiddleware(
   }
 }
 
+export function optionalAuthMiddleware(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): void {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET || 'globetrotter_fallback_secret_2026';
+    try {
+      const decoded = jwt.verify(token, jwtSecret) as AuthUserPayload;
+      req.user = decoded;
+    } catch {
+      // ignore invalid token in optional mode
+    }
+  }
+  next();
+}
+
 export const protect = authMiddleware;
 
 export default authMiddleware;
+

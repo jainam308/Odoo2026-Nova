@@ -765,3 +765,33 @@ export const getTripBudget = async (
     next(error);
   }
 };
+
+/**
+ * PUT /api/trips/:id/stops/reorder - Reorder stops for a trip
+ */
+export const reorderTripStops = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const tripId = Number(req.params.id);
+    const { stopIds } = req.body;
+
+    if (!Array.isArray(stopIds) || stopIds.length === 0) {
+      res.status(400).json({ success: false, message: 'Array of stopIds is required' });
+      return;
+    }
+
+    for (let i = 0; i < stopIds.length; i++) {
+      await db.query(
+        'UPDATE trip_stops SET order_index = $1 WHERE id = $2 AND trip_id = $3',
+        [i + 1, Number(stopIds[i]), tripId]
+      );
+    }
+
+    res.status(200).json({ success: true, message: 'Stops reordered successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -8,12 +8,18 @@ import {
   deleteTrip,
   addTripStop,
   deleteTripStop,
+  reorderTripStops,
   addStopActivity,
   deleteStopActivity,
   getTripBudget,
 } from '../modules/trips/trips.controller';
 
+import { optionalAuthMiddleware } from '../middleware/auth.middleware';
+
 const router = Router();
+
+// Apply optionalAuthMiddleware across all trip routes
+router.use(optionalAuthMiddleware);
 
 // Trips CRUD
 router.post('/', createTrip);
@@ -25,6 +31,7 @@ router.delete('/:id', deleteTrip);
 
 // Stops
 router.post('/:id/stops', addTripStop);
+router.put('/:id/stops/reorder', reorderTripStops);
 router.delete('/:id/stops/:stopId', deleteTripStop);
 
 // Activities within Stop
