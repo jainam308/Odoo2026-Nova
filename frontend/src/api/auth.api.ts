@@ -35,6 +35,14 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface GoogleLoginPayload {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+  google_id?: string;
+}
+
 export const authApi = {
   signup: async (payload: SignupPayload): Promise<AuthResponse> => {
     const res = await apiClient.post<{ success: boolean; data: AuthResponse }>('/auth/signup', payload);
@@ -43,6 +51,11 @@ export const authApi = {
 
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     const res = await apiClient.post<{ success: boolean; data: AuthResponse }>('/auth/login', payload);
+    return res.data.data;
+  },
+
+  googleLogin: async (payload: GoogleLoginPayload): Promise<AuthResponse> => {
+    const res = await apiClient.post<{ success: boolean; data: AuthResponse }>('/auth/google', payload);
     return res.data.data;
   },
 

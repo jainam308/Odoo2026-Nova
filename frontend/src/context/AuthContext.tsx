@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import authApi, { User, LoginPayload, SignupPayload } from '../api/auth.api';
+import authApi, { User, LoginPayload, SignupPayload, GoogleLoginPayload } from '../api/auth.api';
 
 interface AuthContextType {
   user: User | null;
@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
+  googleLogin: (payload: GoogleLoginPayload) => Promise<void>;
   logout: () => void;
   updateProfile: (payload: Partial<User>) => Promise<void>;
 }
@@ -52,6 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(response.user);
   };
 
+  const googleLogin = async (payload: GoogleLoginPayload) => {
+    const response = await authApi.googleLogin(payload);
+    localStorage.setItem('token', response.token);
+    setToken(response.token);
+    setUser(response.user);
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -71,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         signup,
+        googleLogin,
         logout,
         updateProfile,
       }}

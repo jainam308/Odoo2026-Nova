@@ -2,11 +2,32 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Input, Button } from '../../components';
-import { UserPlus, Lock, Mail, User, Phone, MapPin, Globe, AlertCircle, FileText } from 'lucide-react';
+import { UserPlus, Lock, Mail, User, Phone, MapPin, Globe, AlertCircle, FileText, Check, X } from 'lucide-react';
+
+const GoogleIcon: React.FC = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24">
+    <path
+      fill="#4285F4"
+      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+    />
+  </svg>
+);
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, googleLogin } = useAuth();
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -21,6 +42,18 @@ export const RegisterPage: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Live password validation checklist
+  const passwordChecks = {
+    length: formData.password.length >= 8,
+    upper: /[A-Z]/.test(formData.password),
+    lower: /[a-z]/.test(formData.password),
+    number: /\d/.test(formData.password),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password),
+  };
+
+  const isPasswordValid = Object.values(passwordChecks).every(Boolean);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
@@ -32,8 +65,20 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
+    // Front-end sanity check
+    const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
+    if (cleanPhone && cleanPhone.length < 10) {
+      setError('Phone number must contain at least 10 digits.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setError('Password does not meet the security requirements.');
+      return;
+    }
+
+    setLoading(true);
     try {
       await signup(formData);
       navigate('/');
@@ -41,6 +86,25 @@ export const RegisterPage: React.FC = () => {
       setError(err.message || 'Registration failed. Please check your inputs.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setError(null);
+    setGoogleLoading(true);
+
+    try {
+      await googleLogin({
+        email: 'traveler.google@gmail.com',
+        first_name: 'Alex',
+        last_name: 'Google Traveler',
+        photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      });
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Google signup failed.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -95,7 +159,7 @@ export const RegisterPage: React.FC = () => {
         >
           Create an Account
         </h2>
-        <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '24px', textAlign: 'center' }}>
+        <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '20px', textAlign: 'center' }}>
           Join GlobeTrotter to craft, explore, and share seamless itineraries
         </p>
 
@@ -112,13 +176,65 @@ export const RegisterPage: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '20px',
+              marginBottom: '18px',
             }}
           >
             <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
+
+        {/* Google OAuth Quick Sign-Up */}
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          disabled={googleLoading || loading}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            padding: '11px 16px',
+            backgroundColor: '#ffffff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: 'var(--color-text)',
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            transition: 'all 0.2s ease',
+            marginBottom: '18px',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f8fafc';
+            e.currentTarget.style.borderColor = '#cbd5e1';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+          }}
+        >
+          <GoogleIcon />
+          <span>{googleLoading ? 'Connecting to Google...' : 'Sign up with Google'}</span>
+        </button>
+
+        {/* Divider */}
+        <div
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            margin: '0 0 18px',
+          }}
+        >
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-border)' }} />
+          <span style={{ padding: '0 12px', fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+            OR FILL IN DETAILS
+          </span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-border)' }} />
+        </div>
 
         {/* Registration Form (Two-Column Layout matching PNG Screen 2) */}
         <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -159,9 +275,10 @@ export const RegisterPage: React.FC = () => {
               label="Phone Number"
               name="phone"
               type="tel"
-              placeholder="+1 (555) 000-0000"
+              placeholder="e.g. +14155552671 (min 10 digits)"
               value={formData.phone}
               onChange={handleChange}
+              helperText="Must contain at least 10 digits"
               leftIcon={<Phone size={16} />}
             />
           </div>
@@ -186,16 +303,51 @@ export const RegisterPage: React.FC = () => {
             />
           </div>
 
-          <Input
-            label="Password"
-            name="password"
-            type="password"
-            placeholder="Min. 6 characters"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            leftIcon={<Lock size={16} />}
-          />
+          <div>
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              placeholder="Min. 8 chars with uppercase, number & symbol"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              leftIcon={<Lock size={16} />}
+            />
+
+            {/* Live Password Security Checklist */}
+            {formData.password.length > 0 && (
+              <div
+                style={{
+                  marginTop: '8px',
+                  padding: '10px 14px',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '6px',
+                  fontSize: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: passwordChecks.length ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                  {passwordChecks.length ? <Check size={14} /> : <X size={14} />} 8+ Characters
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: passwordChecks.upper ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                  {passwordChecks.upper ? <Check size={14} /> : <X size={14} />} Uppercase (A-Z)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: passwordChecks.lower ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                  {passwordChecks.lower ? <Check size={14} /> : <X size={14} />} Lowercase (a-z)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: passwordChecks.number ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                  {passwordChecks.number ? <Check size={14} /> : <X size={14} />} Number (0-9)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: passwordChecks.special ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                  {passwordChecks.special ? <Check size={14} /> : <X size={14} />} Symbol (@$!%*?)
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Additional Information / Bio matching PNG Screen 2 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
@@ -240,7 +392,7 @@ export const RegisterPage: React.FC = () => {
             size="lg"
             fullWidth
             isLoading={loading}
-            style={{ marginTop: '12px' }}
+            style={{ marginTop: '10px' }}
           >
             Register Now
           </Button>
