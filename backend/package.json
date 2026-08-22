@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "dev": "tsx watch server.ts",
     "db:seed": "tsx src/scripts/migrateAndSeed.ts",
+    "test": "tsx src/scripts/testEndpoints.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
